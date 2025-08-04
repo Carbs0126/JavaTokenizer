@@ -13,12 +13,21 @@ public class TokenCache {
     // 行列位置等
 
     public TokenCache() {
+        type = TokenType.None;
         literalStr = new StringBuilder();
         extra = new StringBuilder();
     }
 
     public void appendLiteralChar(char c) {
         this.literalStr.append(c);
+    }
+
+    public int literalStrLength() {
+        return this.literalStr.length();
+    }
+
+    public char getLastChar() {
+        return this.literalStr.charAt(this.literalStr.length() - 1);
     }
 
     public SealedToken sealAndReset() {
@@ -30,8 +39,12 @@ public class TokenCache {
     private SealedToken seal() {
         SealedToken sealedToken = new SealedToken();
         sealedToken.type = type;
-        sealedToken.literalStr = literalStr.toString();
-        sealedToken.extra = extra.toString();
+        if (literalStr != null && literalStr.length() > 0) {
+            sealedToken.literalStr = literalStr.toString();
+        }
+        if (extra != null && extra.length() > 0) {
+            sealedToken.extra = extra.toString();
+        }
         return sealedToken;
     }
 

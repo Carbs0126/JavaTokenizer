@@ -12,5 +12,6 @@ public enum TokenType {
     CommentBlock,
     PackagePath,
     ImportPath,
-    End // ;
+    End,
+    NotExistTokenNewLine
 }

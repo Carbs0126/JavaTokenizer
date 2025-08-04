@@ -9,20 +9,25 @@ import java.util.ArrayList;
 
 public class Main {
 
-    private static TokenCache curToken = new TokenCache();
-    private static CommentOrString commentOrString = CommentOrString.None;
+    private static TokenCache sCurrentToken = new TokenCache();
+    private static CommentOrString sCommentOrString = CommentOrString.None;
 
     public static void main(String[] argv) {
+
         ArrayList<String> arrayList = readLines();
 
         ArrayList<SealedToken> tokens = getTokens(arrayList);
 
+        StringBuilder tokensStr = new StringBuilder();
         // test
         if (tokens != null) {
             for (SealedToken sealedToken : tokens) {
-                System.out.println(sealedToken);
+//                System.out.println(sealedToken.getLiteralStr());
+                tokensStr.append(sealedToken.getLiteralStr());
             }
         }
+        System.out.println("======================================");
+        System.out.println(tokensStr);
     }
 
     // 获取一个 file 的 tokens
@@ -39,23 +44,26 @@ public class Main {
         StringBuilder importStrCache = new StringBuilder();
         ImportState importState = ImportState.None;
 
+        int penetratePackageAndImportSectionState = 0;
+
         int lineIndex = -1;
         for (String s : arrayList) {
             lineIndex++;
             System.out.println("line -> " + s);
+            // 人工添加一个 换行 token，便于打印
             int strLength = s.length();
-            if (commentOrString == CommentOrString.InSlashComment) {
+            if (sCommentOrString == CommentOrString.InSlashComment) {
                 // 新的一行，跳出行注释
-                commentOrString = CommentOrString.None;
-            } else if (commentOrString == CommentOrString.MayEndBlockComment) {
-                commentOrString = CommentOrString.InBlockComment;
+                sCommentOrString = CommentOrString.None;
+            } else if (sCommentOrString == CommentOrString.MayEndBlockComment) {
+                sCommentOrString = CommentOrString.InBlockComment;
             }
             if (sectionType != SectionType.ContentSection) {
                 // 当 section 位于 none 或者 package 或者 import 时
                 for (int i = 0; i < strLength; i++) {
                     char c = s.charAt(i);
                     if (sectionType == SectionType.None) {
-                        if (commentOrString == CommentOrString.None) {
+                        if (sCommentOrString == CommentOrString.None) {
                             if (isSpace(c)) {
                                 continue;
                             } else if (c == 'p') {
@@ -64,15 +72,13 @@ public class Main {
                                 continue;
                             } else if (c == 'i' && i < strLength - 1 && s.charAt(i + 1) == 'm') {
                                 // 有可能是 interface
-//                        fatal("0");
                                 // 无 package 声明，直接进入 import
                                 sectionType = SectionType.ImportSection;
                                 importState = ImportState.Processing;
                                 importStrCache.append("i");
                                 continue;
-//                            } else if (c == '/' && i < strLength - 1 && s.charAt(i + 1) == '/') {
-                            } else if (c == '/') {
-                                commentOrString = CommentOrString.MayCommentStarter;
+                            } else if (isCommentStarter(c)) {
+                                sCommentOrString = CommentOrString.MayCommentStarter;
                                 // 全局变量存储当前是否为 string，是否为 comment
                                 // todo wang
                                 // sectionType 不变，是一层
@@ -81,41 +87,42 @@ public class Main {
                                 // todo 这里需要判断是否有注释
                                 // 无 package 无 import，直接进入 content
                                 sectionType = SectionType.ContentSection;
+                                penetratePackageAndImportSectionState = 1;
                                 break;
                             }
-                        } else if (commentOrString == CommentOrString.MayCommentStarter) {
-                            if (c == '/') {
-                                commentOrString = CommentOrString.InSlashComment;
+                        } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
+                            if (isCommentStarter(c)) {
+                                sCommentOrString = CommentOrString.InSlashComment;
                                 continue;
                             } else if (c == '*') {
-                                commentOrString = CommentOrString.InBlockComment;
+                                sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
                                 fatal("000");
                             }
-                        } else if (commentOrString == CommentOrString.InSlashComment) {
+                        } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
-                        } else if (commentOrString == CommentOrString.InBlockComment) {
+                        } else if (sCommentOrString == CommentOrString.InBlockComment) {
                             if (c == '*') {
-                                commentOrString = CommentOrString.MayEndBlockComment;
+                                sCommentOrString = CommentOrString.MayEndBlockComment;
                             }
                             continue;
-                        } else if (commentOrString == CommentOrString.MayEndBlockComment) {
+                        } else if (sCommentOrString == CommentOrString.MayEndBlockComment) {
                             if (c == '*') {
                                 continue;
-                            } else if (c == '/') {
+                            } else if (isCommentStarter(c)) {
                                 // 收 comment
-                                commentOrString = CommentOrString.None;
+                                sCommentOrString = CommentOrString.None;
                                 // todo
 //                                curToken.type = TokenType.CommentBlock;
                                 continue;
                             } else {
-                                commentOrString = CommentOrString.InBlockComment;
+                                sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             }
                         }
                     } else if (sectionType == SectionType.PackageSection) {
-                        if (commentOrString == CommentOrString.None) {
+                        if (sCommentOrString == CommentOrString.None) {
                             if (isSpace(c)) {
                                 continue;
                             } else if (isLegalIdentifierPostfix(c) || isDot(c)) {
@@ -126,41 +133,41 @@ public class Main {
                                 sectionType = SectionType.ImportSection;
                                 packageStr.append(c);
                                 continue;
-                            } else if (c == '/') {
-                                commentOrString = CommentOrString.MayCommentStarter;
+                            } else if (isCommentStarter(c)) {
+                                sCommentOrString = CommentOrString.MayCommentStarter;
                                 continue;
                             }
-                        } else if (commentOrString == CommentOrString.MayCommentStarter) {
-                            if (c == '/') {
+                        } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
+                            if (isCommentStarter(c)) {
                                 // package 中应该没有行注释
                                 fatal("11");
                             } else if (c == '*') {
-                                commentOrString = CommentOrString.InBlockComment;
+                                sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
                                 fatal("22");
                             }
-                        } else if (commentOrString == CommentOrString.InBlockComment) {
+                        } else if (sCommentOrString == CommentOrString.InBlockComment) {
                             if (c == '*') {
-                                commentOrString = CommentOrString.MayEndBlockComment;
+                                sCommentOrString = CommentOrString.MayEndBlockComment;
                             }
                             continue;
-                        } else if (commentOrString == CommentOrString.MayEndBlockComment) {
+                        } else if (sCommentOrString == CommentOrString.MayEndBlockComment) {
                             if (c == '*') {
                                 continue;
-                            } else if (c == '/') {
+                            } else if (isCommentStarter(c)) {
                                 // 收 block comment
                                 // todo
-                                commentOrString = CommentOrString.None;
+                                sCommentOrString = CommentOrString.None;
                                 continue;
                             } else {
-                                commentOrString = CommentOrString.InBlockComment;
+                                sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             }
                         }
                     } else if (sectionType == SectionType.ImportSection) {
                         // 可能有注释
-                        if (commentOrString == CommentOrString.None) {
+                        if (sCommentOrString == CommentOrString.None) {
                             if (importState == ImportState.None) {
                                 if (isSpace(c)) {
                                     continue;
@@ -170,14 +177,15 @@ public class Main {
                                     continue;
                                 } else if (isExpressionEnd(c)) {
                                     continue;
-                                } else if (c == '/') {
-                                    commentOrString = CommentOrString.MayCommentStarter;
+                                } else if (isCommentStarter(c)) {
+                                    sCommentOrString = CommentOrString.MayCommentStarter;
                                     continue;
                                 } else {
                                     // todo 待验证
 //                            fatal("1");
                                     sectionType = SectionType.ContentSection;
                                     // 在后面的 for 循环中，此行重新循环
+                                    penetratePackageAndImportSectionState = 1;
                                     break;
                                 }
                             } else if (importState == ImportState.Processing) {
@@ -194,38 +202,38 @@ public class Main {
                                     // 不对，有可能一行有两个import
                                     importState = ImportState.None;
                                     continue;
-                                } else if (c == '/') {
-                                    commentOrString = CommentOrString.MayCommentStarter;
+                                } else if (isCommentStarter(c)) {
+                                    sCommentOrString = CommentOrString.MayCommentStarter;
                                     continue;
                                 }
                             }
-                        } else if (commentOrString == CommentOrString.MayCommentStarter) {
-                            if (c == '/') {
-                                commentOrString = CommentOrString.InSlashComment;
+                        } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
+                            if (isCommentStarter(c)) {
+                                sCommentOrString = CommentOrString.InSlashComment;
                                 continue;
                             } else if (c == '*') {
-                                commentOrString = CommentOrString.InBlockComment;
+                                sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
                                 fatal("33");
                             }
-                        } else if (commentOrString == CommentOrString.InSlashComment) {
+                        } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
-                        } else if (commentOrString == CommentOrString.InBlockComment) {
+                        } else if (sCommentOrString == CommentOrString.InBlockComment) {
                             if (c == '*') {
-                                commentOrString = CommentOrString.MayEndBlockComment;
+                                sCommentOrString = CommentOrString.MayEndBlockComment;
                             }
                             continue;
-                        } else if (commentOrString == CommentOrString.MayEndBlockComment) {
+                        } else if (sCommentOrString == CommentOrString.MayEndBlockComment) {
                             if (c == '*') {
                                 continue;
-                            } else if (c == '/') {
+                            } else if (isCommentStarter(c)) {
                                 // 收 comment
-                                commentOrString = CommentOrString.None;
+                                sCommentOrString = CommentOrString.None;
                                 // todo
                                 continue;
                             } else {
-                                commentOrString = CommentOrString.InBlockComment;
+                                sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             }
                         }
@@ -239,229 +247,311 @@ public class Main {
                 continue;
             }
 
-            if (true) {
-                System.out.println("package is --> " + packageStr + "\n");
+            // todo
+//            if (false) {
+//                System.out.println("package is --> " + packageStr + "\n");
+//                for (String im : importStrArr) {
+//                    System.out.println("import is --> " + im + "\n");
+//                }
+//                return tokens;
+//            }
+            if (penetratePackageAndImportSectionState == 1) {
+                penetratePackageAndImportSectionState = 2;
+                // 在这里收集 package 和 import
+                tokens.add(SealedToken.genPackageToken(packageStr.toString()));
+                tokens.add(SealedToken.genNewLineToken());
                 for (String im : importStrArr) {
-                    System.out.println("import is --> " + im + "\n");
+                    tokens.add(SealedToken.genPackageToken(im));
+                    tokens.add(SealedToken.genNewLineToken());
                 }
-                return tokens;
             }
+
+            tokens.add(SealedToken.genNewLineToken());
+
             // 只有等到 sectionType == SectionType.ContentSection ，才会进入下面的代码中
+
+            // 上一行以 identifier 或者 number 或者
+            if (sCurrentToken.type == TokenType.Identifier || sCurrentToken.type == TokenType.Number) {
+                collectTokenAndResetCache(tokens, sCurrentToken);
+            }
 
             for (int i = 0; i < s.length(); i++) {
                 char c = s.charAt(i);
                 // todo wang 先判断是否为 commentOrString
-                if (commentOrString == CommentOrString.None) {
-                    if (curToken.type == TokenType.None) {
+                if (sCommentOrString == CommentOrString.None) {
+                    if (sCurrentToken.type == TokenType.None) {
                         if (isCommentStarter(c)) {
-                            commentOrString = CommentOrString.MayCommentStarter;
+                            sCommentOrString = CommentOrString.MayCommentStarter;
                             continue;
                         } else if (isStringSymbol(c)) {
-                            commentOrString = CommentOrString.InString;
+                            sCommentOrString = CommentOrString.InString;
+                            sCurrentToken.type = TokenType.String;
+                            sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isSpace(c)) {
                             // 如果是空白，继续前进
                             continue;
                         } else if (isLegalIdentifierStarter(c)) {
                             // 如果是合法的起始 identifier
-                            curToken.type = TokenType.Identifier;
-                            curToken.appendLiteralChar(c);
+                            sCurrentToken.type = TokenType.Identifier;
+                            sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isOperator(c)) {
-                            // todo
-                            curToken.type = TokenType.Operator;
-                            curToken.appendLiteralChar(c);
+                            // 每一个 operator 都回收
+                            sCurrentToken.type = TokenType.Operator;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isParentheses(c)) {
-                            curToken.type = TokenType.Parentheses;
-                            curToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, curToken);
+                            sCurrentToken.type = TokenType.Parentheses;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isLegalNumberStarter(c)) {
-                            curToken.type = TokenType.Number;
-                            curToken.appendLiteralChar(c);
+                            sCurrentToken.type = TokenType.Number;
+                            sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isCharSymbol(c)) {
-                            curToken.type = TokenType.Char;
-                            curToken.appendLiteralChar(c);
+                            sCurrentToken.type = TokenType.Char;
+                            sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isExpressionEnd(c)) {
-                            curToken.type = TokenType.End;
-                            curToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, curToken);
+                            sCurrentToken.type = TokenType.End;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isDot(c)) {
-                            curToken.type = TokenType.Dot;
-                            curToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, curToken);
+                            sCurrentToken.type = TokenType.Dot;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else {
                             System.out.println("[ else 0 continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
                             continue;
                         }
-                    } else if (curToken.type == TokenType.Identifier) {
+                    } else if (sCurrentToken.type == TokenType.Identifier) {
                         if (isCommentStarter(c)) {
-                            collectTokenAndResetCache(tokens, curToken);
-                            commentOrString = CommentOrString.MayCommentStarter;
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCommentOrString = CommentOrString.MayCommentStarter;
                             continue;
                         } else if (isStringSymbol(c)) {
-                            collectTokenAndResetCache(tokens, curToken);
-                            commentOrString = CommentOrString.InString;
+                            // todo 不可能，输出log
+
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCommentOrString = CommentOrString.InString;
+                            sCurrentToken.type = TokenType.String;
+                            sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isSpace(c)) {
-                            // todo wang 如果 R . id . someLayout 呢？
-                            // space 不应该
-                            // 不对，identifier 确实应该回收，后续再分析一下 identifier 后面 + dot + identifier 的情况
-                            collectTokenAndResetCache(tokens, curToken);
+                            // identifier 确实应该回收，后续再分析一下 identifier 后面 + dot + identifier 的情况
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isLegalIdentifierPostfix(c)) {
-                            curToken.appendLiteralChar(c);
+                            sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isDot(c)) {
-                            collectTokenAndResetCache(tokens, curToken);
-                            curToken.type = TokenType.Dot;
-                            curToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, curToken);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Dot;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isOperator(c)) {
                             // 收 identifier
-                            collectTokenAndResetCache(tokens, curToken);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             // 暂时不收 operator，有可能有多个连续operator字符
-                            curToken.type = TokenType.Operator;
-                            curToken.appendLiteralChar(c);
+                            sCurrentToken.type = TokenType.Operator;
+                            sCurrentToken.appendLiteralChar(c);
+                            // 每一个 operator 都回收
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isParentheses(c)) {
                             // 收 identifier
-                            collectTokenAndResetCache(tokens, curToken);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             // 收 括号
-                            curToken.type = TokenType.Operator;
-                            curToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, curToken);
+                            sCurrentToken.type = TokenType.Operator;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isExpressionEnd(c)) {
-                            collectTokenAndResetCache(tokens, curToken);
-                            curToken.type = TokenType.End;
-                            curToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, curToken);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.End;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else {
                             System.out.println("[ else 1 continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
                             continue;
                         }
-                    } else if (curToken.type == TokenType.Operator) {
-                        // curToken.type == TokenType.Operator 这种情况不存在，因为 每次遇到 operator 都会回收并重置
-                        if (true) {
-                            System.out.println("[ curToken.type == TokenType.Operator continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
-                            continue;
-                        }
-                        if (isSpace(c)) {
-                            collectTokenAndResetCache(tokens, curToken);
-                            continue;
-                        } else if (isOperator(c)) {
-                            curToken.appendLiteralChar(c);
-                            continue;
-                        } else if (isParentheses(c)) {
-                            // 收 identifier
-                            collectTokenAndResetCache(tokens, curToken);
-                            // 收 括号
-                            curToken.type = TokenType.Operator;
-                            curToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, curToken);
-                            continue;
-                        } else if (isLegalNumberStarter(c)) {
-                            // 收 operator
-                            collectTokenAndResetCache(tokens, curToken);
-                            curToken.type = TokenType.Number;
-                            curToken.appendLiteralChar(c);
-                        } else if (isLegalIdentifierStarter(c)) {
-                            // 收 operator
-                            collectTokenAndResetCache(tokens, curToken);
-                            curToken.type = TokenType.Identifier;
-                            curToken.appendLiteralChar(c);
-                        } else if (isExpressionEnd(c)) {
-                            // 收 operator
-                            collectTokenAndResetCache(tokens, curToken);
-                            curToken.type = TokenType.End;
-                            curToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, curToken);
-                        }
-                    } else if (curToken.type == TokenType.Number) {
+                    } else if (sCurrentToken.type == TokenType.Number) {
                         if (isCommentStarter(c)) {
-                            // todo
-                            collectTokenAndResetCache(tokens, curToken);
-                            commentOrString = CommentOrString.MayCommentStarter;
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCommentOrString = CommentOrString.MayCommentStarter;
                             continue;
                         } else if (isStringSymbol(c)) {
-                            collectTokenAndResetCache(tokens, curToken);
-                            commentOrString = CommentOrString.InString;
+                            // todo 不可能，输出log
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCommentOrString = CommentOrString.InString;
+                            sCurrentToken.type = TokenType.String;
+                            sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isSpace(c)) {
                             // 收 number
-                            collectTokenAndResetCache(tokens, curToken);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isOperator(c)) {
                             // 收 number
-                            collectTokenAndResetCache(tokens, curToken);
-                            curToken.type = TokenType.Operator;
-                            curToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Operator;
+                            sCurrentToken.appendLiteralChar(c);
+                            // 收 operator
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isLegalNumberPostfix(c)) {
                             // 继续
-                            curToken.appendLiteralChar(c);
+                            sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isParentheses(c)) {
                             // 收 number
-                            collectTokenAndResetCache(tokens, curToken);
-                            curToken.type = TokenType.Parentheses;
-                            curToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Parentheses;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
-                        }
-                        if (isLegalIdentifierStarter(c)) {
-                            // 收 number
-                            collectTokenAndResetCache(tokens, curToken);
-                            curToken.type = TokenType.Identifier;
-                            curToken.appendLiteralChar(c);
                         } else if (isExpressionEnd(c)) {
                             // 收 number
-                            collectTokenAndResetCache(tokens, curToken);
-                            curToken.type = TokenType.End;
-                            curToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, curToken);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.End;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                        } else {
+                            System.out.println("[ else 3 curToken.type == " + sCurrentToken.type.name() + " continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
+                            continue;
                         }
-                    } else if (isStringSymbol(c)) { // string 开头
-                        // todo
+                    } else if (sCurrentToken.type == TokenType.Char) {
+                        if (isCharSymbol(c)) {
+                            // 收
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else {
+                            // append
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        }
+                    } else {
+                        // curToken.type == TokenType.Operator 这种情况不存在，因为 每次遇到 operator 都会回收并重置
+                        System.out.println("[ curToken.type == " + sCurrentToken.type.name() + "  continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
+                        continue;
                     }
-                } else if (commentOrString == CommentOrString.MayCommentStarter) {
-                    if (c == '/') {
-                        commentOrString = CommentOrString.InSlashComment;
+                } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
+                    // todo
+                    if (isCommentStarter(c)) {
+                        sCommentOrString = CommentOrString.InSlashComment;
                         continue;
                     } else if (c == '*') {
-                        commentOrString = CommentOrString.InBlockComment;
+                        sCommentOrString = CommentOrString.InBlockComment;
                         continue;
                     } else {
                         // 前一个 收为 除号
-                        curToken.type = TokenType.Operator;
-                        curToken.appendLiteralChar('/');
-                        collectTokenAndResetCache(tokens, curToken);
-                        // 当前 判断
+                        sCurrentToken.type = TokenType.Operator;
+                        sCurrentToken.appendLiteralChar('/');
+                        collectTokenAndResetCache(tokens, sCurrentToken);
 
+                        // 当前 判断当前的字符
+                        sCommentOrString = CommentOrString.None;
+                        // todo 以下代码 和上面 commentOrString == CommentOrString.None && curToken.type == TokenType.None 的情况重复
+                        if (isCommentStarter(c)) {
+                            sCommentOrString = CommentOrString.MayCommentStarter;
+                            continue;
+                        } else if (isStringSymbol(c)) {
+                            // todo 不可能，输出log
+                            sCommentOrString = CommentOrString.InString;
+                            sCurrentToken.type = TokenType.String;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isSpace(c)) {
+                            // 如果是空白，继续前进
+                            continue;
+                        } else if (isLegalIdentifierStarter(c)) {
+                            // 如果是合法的起始 identifier
+                            sCurrentToken.type = TokenType.Identifier;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isOperator(c)) {
+                            // 每一个 operator 都回收
+                            sCurrentToken.type = TokenType.Operator;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isParentheses(c)) {
+                            sCurrentToken.type = TokenType.Parentheses;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isLegalNumberStarter(c)) {
+                            // todo 怎样区分 dot 和 number ?
+                            // 根据前面的判断？如果是 ；或者 operator  或者是 number
+                            // todo wang 前面应该是
+                            sCurrentToken.type = TokenType.Number;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isCharSymbol(c)) {
+                            sCurrentToken.type = TokenType.Char;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isExpressionEnd(c)) {
+                            sCurrentToken.type = TokenType.End;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isDot(c)) {
+                            sCurrentToken.type = TokenType.Dot;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else {
+                            System.out.println("[ else 0 continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
+                            continue;
+                        }
                     }
-                } else if (commentOrString == CommentOrString.InSlashComment) {
-
-                } else if (commentOrString == CommentOrString.InBlockComment) {
-
-                } else if (commentOrString == CommentOrString.MayEndBlockComment) {
-
-                }
-
-
-                // 一行结束，token收尾
-                if (curToken.type == TokenType.Identifier) {
-                    SealedToken sealedToken = curToken.sealAndReset();
-                    tokens.add(sealedToken);
+                } else if (sCommentOrString == CommentOrString.InSlashComment) {
+                    // 当前行 跳过任何字符
+                    continue;
+                } else if (sCommentOrString == CommentOrString.InBlockComment) {
+                    if (isStar(c)) {
+                        sCommentOrString = CommentOrString.MayEndBlockComment;
+                    }
+                    continue;
+                } else if (sCommentOrString == CommentOrString.MayEndBlockComment) {
+                    if (isBlockCommentEnd(c)) {
+                        sCommentOrString = CommentOrString.None;
+                    } else {
+                        sCommentOrString = CommentOrString.InBlockComment;
+                    }
+                    continue;
+                } else if (sCommentOrString == CommentOrString.InString) {
+                    // todo 转义字符
+                    String x = "\n\"\' ";
+                    if (isStringSymbol(c)) {
+                        // todo
+                        // 检查前一个字符是否为转义符
+                        if (sCurrentToken.literalStrLength() > 0 && isEscape(sCurrentToken.getLastChar())) {
+                            // 前一个字符为转义字符，当前 " 字符仍然在 字符串内
+                            sCurrentToken.appendLiteralChar(c);
+                        } else {
+                            // 结束当前字符串
+                            sCommentOrString = CommentOrString.None;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                        }
+                        continue;
+                    } else {
+                        // 字符串继续
+                        sCurrentToken.appendLiteralChar(c);
+                        continue;
+                    }
                 }
             }
-
         }
 
         return tokens;
@@ -502,7 +592,20 @@ public class Main {
         return false;
     }
 
+    private static boolean isStar(char c) {
+        return c == '*';
+    }
+
     private static boolean isCommentStarter(char c) {
+        return c == '/';
+    }
+
+    // 是否为转义字符
+    private static boolean isEscape(char c) {
+        return c == '\\';
+    }
+
+    private static boolean isBlockCommentEnd(char c) {
         return c == '/';
     }
 
@@ -519,9 +622,12 @@ public class Main {
         if ('0' <= c && c <= '9') {
             return true;
         }
-        if (c == '.') {
-            return true;
-        }
+        // todo 需要判断 前一个 token 是什么？还是要做语法分析？
+        // 前一个是 identifier 或者 括号，后面的 . 就是调用
+        // 前一个是 纯数字、operator 或者是 ; 那么 . 就可以作为 number
+//        if (c == '.') {
+//            return true;
+//        }
         return false;
     }
 
