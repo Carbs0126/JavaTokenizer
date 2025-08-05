@@ -1,0 +1,54 @@
+### IntelliJ IDEA ###
+# 项目相关文件夹
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# 编译和构建输出
+/out/
+/build/
+target/
+bin/
+
+# 日志和缓存
+*.log
+.cache/
+
+# 本地属性文件
+local.properties
+
+# 与特定机器相关的文件
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+### Java ###
+# 编译类文件
+*.class
+
+# 打包的jar、war、ear等
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# 依赖管理缓存（通常由构建工具管理）
+!/mvnw
+!/mvnw.cmd
+!/gradlew
+!/gradlew.bat
+!/gradle/wrapper/gradle-wrapper.jar
+
+### Maven ###
+# Maven 本地仓库（通常不提交）
+.mvn/
+!/mvn
+!/mvn.cmd
+# 如果你使用 Maven Wrapper，需要包含以下文件
+!/mvnw
+!/mvnw.cmd
+!/mvn

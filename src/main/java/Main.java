@@ -22,11 +22,10 @@ public class Main {
         // test
         if (tokens != null) {
             for (SealedToken sealedToken : tokens) {
-//                System.out.println(sealedToken.getLiteralStr());
                 tokensStr.append(sealedToken.getLiteralStr());
             }
         }
-        System.out.println("======================================");
+        System.out.println("=================== ↓ tokens ↓ ===================");
         System.out.println(tokensStr);
     }
 
@@ -49,7 +48,7 @@ public class Main {
         int lineIndex = -1;
         for (String s : arrayList) {
             lineIndex++;
-            System.out.println("line -> " + s);
+            print("line ->|" + lineIndex + "|" + s);
             // 人工添加一个 换行 token，便于打印
             int strLength = s.length();
             if (sCommentOrString == CommentOrString.InSlashComment) {
@@ -98,7 +97,7 @@ public class Main {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                fatal("000");
+                                printError("package or import 0", " current char : " + c);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
@@ -140,12 +139,12 @@ public class Main {
                         } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
                             if (isCommentStarter(c)) {
                                 // package 中应该没有行注释
-                                fatal("11");
+                                printError("package or import 1", " current char : " + c);
                             } else if (c == '*') {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                fatal("22");
+                                printError("package or import 2", " current char : " + c);
                             }
                         } else if (sCommentOrString == CommentOrString.InBlockComment) {
                             if (c == '*') {
@@ -182,7 +181,6 @@ public class Main {
                                     continue;
                                 } else {
                                     // todo 待验证
-//                            fatal("1");
                                     sectionType = SectionType.ContentSection;
                                     // 在后面的 for 循环中，此行重新循环
                                     penetratePackageAndImportSectionState = 1;
@@ -197,6 +195,7 @@ public class Main {
                                 } else if (isExpressionEnd(c)) {
                                     importStrCache.append(c);
                                     importStrArr.add(importStrCache.toString());
+                                    importStrCache.setLength(0);
                                     // todo 下一行，怎么处理
                                     // 添加标志位，进入下一行
                                     // 不对，有可能一行有两个import
@@ -215,7 +214,7 @@ public class Main {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                fatal("33");
+                                printError("package or import 3", " current char : " + c);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
@@ -307,7 +306,12 @@ public class Main {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
-                        } else if (isLegalNumberStarter(c)) {
+                        } else if (isDot(c)) {
+                            // todo wang
+                            sCurrentToken.type = TokenType.DotConfirmLater;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isPureNumber(c)) {
                             sCurrentToken.type = TokenType.Number;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
@@ -315,18 +319,19 @@ public class Main {
                             sCurrentToken.type = TokenType.Char;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
+                        } else if (isComma(c)) {
+                            sCurrentToken.type = TokenType.Comma;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
                         } else if (isExpressionEnd(c)) {
                             sCurrentToken.type = TokenType.End;
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
-                        } else if (isDot(c)) {
-                            sCurrentToken.type = TokenType.Dot;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            continue;
                         } else {
-                            System.out.println("[ else 0 continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
+                            printError("CommentOrString.None & TokenType.None",
+                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c);
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Identifier) {
@@ -336,7 +341,6 @@ public class Main {
                             continue;
                         } else if (isStringSymbol(c)) {
                             // todo 不可能，输出log
-
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             sCommentOrString = CommentOrString.InString;
                             sCurrentToken.type = TokenType.String;
@@ -346,12 +350,18 @@ public class Main {
                             // identifier 确实应该回收，后续再分析一下 identifier 后面 + dot + identifier 的情况
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
+                        } else if (isComma(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Comma;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
                         } else if (isLegalIdentifierPostfix(c)) {
                             sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isDot(c)) {
                             collectTokenAndResetCache(tokens, sCurrentToken);
-                            sCurrentToken.type = TokenType.Dot;
+                            sCurrentToken.type = TokenType.DotForIdentifier;
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
@@ -379,7 +389,8 @@ public class Main {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else {
-                            System.out.println("[ else 1 continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
+                            printError("CommentOrString.None & TokenType.Identifier",
+                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c);
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Number) {
@@ -393,6 +404,12 @@ public class Main {
                             sCommentOrString = CommentOrString.InString;
                             sCurrentToken.type = TokenType.String;
                             sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isComma(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Comma;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isSpace(c)) {
                             // 收 number
@@ -424,7 +441,8 @@ public class Main {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                         } else {
-                            System.out.println("[ else 3 curToken.type == " + sCurrentToken.type.name() + " continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
+                            printError("CommentOrString.None & TokenType.Number",
+                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c);
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Char) {
@@ -438,9 +456,72 @@ public class Main {
                             sCurrentToken.appendLiteralChar(c);
                             continue;
                         }
+                    } else if (sCurrentToken.type == TokenType.DotConfirmLater) {
+                        // todo 待验证
+                        // float x = . 9f; // 格式错误
+                        // float x = .9f;  // 格式正确
+                        if (isPureNumber(c)) {
+                            // 前面的 dot 按照 DotForNumber 处理
+                            sCurrentToken.type = TokenType.Number;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isComma(c)) {
+                            // 上一个是 number，并回收
+                            sCurrentToken.type = TokenType.Number;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+
+                            // 当前是 ',' 回收
+                            sCurrentToken.type = TokenType.Comma;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        }
+                        // 前面的 dot 按照 DotForIdentifier 处理
+                        sCurrentToken.type = TokenType.DotForIdentifier;
+                        collectTokenAndResetCache(tokens, sCurrentToken);
+                        // todo 处理当前字符，前一个字符是 .
+                        if (isCommentStarter(c)) {
+                            sCommentOrString = CommentOrString.MayCommentStarter;
+                            continue;
+                        } else if (isSpace(c)) {
+                            // 如果是空白，继续前进
+                            continue;
+                        } else if (isLegalIdentifierStarter(c)) {
+                            // 如果是合法的起始 identifier
+                            sCurrentToken.type = TokenType.Identifier;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isOperator(c)) {
+                            // 每一个 operator 都回收
+                            sCurrentToken.type = TokenType.Operator;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isParentheses(c)) {
+                            sCurrentToken.type = TokenType.Parentheses;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isDot(c)) {
+                            // todo wang
+                            sCurrentToken.type = TokenType.DotConfirmLater;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isExpressionEnd(c)) {
+                            sCurrentToken.type = TokenType.End;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else {
+                            printError("CommentOrString.None & TokenType.DotConfirmLater",
+                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c);
+                            continue;
+                        }
                     } else {
                         // curToken.type == TokenType.Operator 这种情况不存在，因为 每次遇到 operator 都会回收并重置
-                        System.out.println("[ curToken.type == " + sCurrentToken.type.name() + "  continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
+                        printError("CommentOrString.None & TokenType else",
+                                "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c);
                         continue;
                     }
                 } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
@@ -448,7 +529,7 @@ public class Main {
                     if (isCommentStarter(c)) {
                         sCommentOrString = CommentOrString.InSlashComment;
                         continue;
-                    } else if (c == '*') {
+                    } else if (isStar(c)) {
                         sCommentOrString = CommentOrString.InBlockComment;
                         continue;
                     } else {
@@ -488,10 +569,7 @@ public class Main {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
-                        } else if (isLegalNumberStarter(c)) {
-                            // todo 怎样区分 dot 和 number ?
-                            // 根据前面的判断？如果是 ；或者 operator  或者是 number
-                            // todo wang 前面应该是
+                        } else if (isPureNumber(c) || isDot(c)) {
                             sCurrentToken.type = TokenType.Number;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
@@ -504,13 +582,9 @@ public class Main {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
-                        } else if (isDot(c)) {
-                            sCurrentToken.type = TokenType.Dot;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            continue;
                         } else {
-                            System.out.println("[ else 0 continue lineIndex : " + lineIndex + " columnIndex : " + i + " ] ");
+                            printError("CommentOrString.MayCommentStarter & current c else",
+                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c);
                             continue;
                         }
                     }
@@ -618,16 +692,14 @@ public class Main {
         return false;
     }
 
-    private static boolean isLegalNumberStarter(char c) {
+    private static boolean isComma(char c) {
+        return c == ',';
+    }
+
+    private static boolean isPureNumber(char c) {
         if ('0' <= c && c <= '9') {
             return true;
         }
-        // todo 需要判断 前一个 token 是什么？还是要做语法分析？
-        // 前一个是 identifier 或者 括号，后面的 . 就是调用
-        // 前一个是 纯数字、operator 或者是 ; 那么 . 就可以作为 number
-//        if (c == '.') {
-//            return true;
-//        }
         return false;
     }
 
@@ -665,17 +737,18 @@ public class Main {
             }
 
         } catch (Exception e) {
-            System.err.println("读取文件失败: " + e.getMessage());
+            printError("read lines", "读取文件失败: " + e.getMessage());
         }
 
         return arrayList;
+    }
+
+    private static void printError(String tag, String message) {
+        System.err.println("[" + tag + "] " + message);
     }
 
     private static void print(String message) {
         System.out.println(" " + message);
     }
 
-    private static void fatal(String message) {
-        throw new RuntimeException("error " + message);
-    }
 }

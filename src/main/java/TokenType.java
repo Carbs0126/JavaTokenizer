@@ -6,12 +6,14 @@ public enum TokenType {
     Parentheses,
     Number,
     String,
-    Dot,    // 用于 identifier 合成
+    DotForIdentifier,    // 用于 identifier 合成
+    DotConfirmLater,
     Char,
     CommentLine,
     CommentBlock,
     PackagePath,
     ImportPath,
+    Comma,
     End,
     NotExistTokenNewLine
 }
