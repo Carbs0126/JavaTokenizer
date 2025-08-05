@@ -14,9 +14,17 @@ public class Main {
 
     public static void main(String[] argv) {
 
-        // data0.txt ok
-        // data1.txt PARSE ERROR --> [CommentOrString.None & TokenType.None] line : 1478, columnIndex : 81, current char : :
-        ArrayList<String> arrayList = readLines("data1.txt");
+        // data0.txt success
+        // data1.txt success
+        // data2.txt success
+        // data3.txt fail
+        // data4.txt success
+        // data5.txt success
+        // data6.txt
+        // data7.txt
+        // data8.txt
+        // data9.txt
+        ArrayList<String> arrayList = readLines("data3.txt");
 
         ArrayList<SealedToken> tokens = getTokens(arrayList);
 
@@ -266,8 +274,10 @@ public class Main {
             if (penetratePackageAndImportSectionState == 1) {
                 penetratePackageAndImportSectionState = 2;
                 // 在这里收集 package 和 import
-                tokens.add(SealedToken.genPackageToken(packageStr.substring(7))); // "package".length() == 7
-                tokens.add(SealedToken.genNewLineToken());
+                if (packageStr.length() > 0) {
+                    tokens.add(SealedToken.genPackageToken(packageStr.substring(7))); // "package".length() == 7
+                    tokens.add(SealedToken.genNewLineToken());
+                }
                 for (String importStr : importStrArr) {
                     tokens.add(SealedToken.genPackageToken(importStr.substring(6))); // "import".length() == 6
                     tokens.add(SealedToken.genNewLineToken());
@@ -316,7 +326,6 @@ public class Main {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isDot(c)) {
-                            // todo wang
                             sCurrentToken.type = TokenType.DotConfirmLater;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
@@ -330,6 +339,11 @@ public class Main {
                             continue;
                         } else if (isComma(c)) {
                             sCurrentToken.type = TokenType.Comma;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isColon(c)) {
+                            sCurrentToken.type = TokenType.Colon;
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
@@ -362,6 +376,12 @@ public class Main {
                         } else if (isComma(c)) {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             sCurrentToken.type = TokenType.Comma;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isColon(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Colon;
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
@@ -420,6 +440,12 @@ public class Main {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
+                        } else if (isColon(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Colon;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
                         } else if (isSpace(c)) {
                             // 收 number
                             collectTokenAndResetCache(tokens, sCurrentToken);
@@ -455,11 +481,17 @@ public class Main {
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Char) {
+                        char x = '\"';
                         if (isCharSymbol(c)) {
-                            // 收
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            continue;
+                            // 如果前一个是转义符，那么当前这个仍然不能作为 char 的完结
+                            if (sCurrentToken.literalStrLength() > 0 && isEscape(sCurrentToken.getLastChar())) {
+                                sCurrentToken.appendLiteralChar(c);
+                            } else {
+                                // 收
+                                sCurrentToken.appendLiteralChar(c);
+                                collectTokenAndResetCache(tokens, sCurrentToken);
+                                continue;
+                            }
                         } else {
                             // append
                             sCurrentToken.appendLiteralChar(c);
@@ -482,6 +514,17 @@ public class Main {
 
                             // 当前是 ',' 回收
                             sCurrentToken.type = TokenType.Comma;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isColon(c)) {
+                            // 上一个是 number，并回收
+                            sCurrentToken.type = TokenType.Number;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+
+                            // 当前是 ':' 回收
+                            sCurrentToken.type = TokenType.Colon;
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
@@ -702,6 +745,10 @@ public class Main {
         return c == ',';
     }
 
+    private static boolean isColon(char c) {
+        return c == ':';
+    }
+
     private static boolean isPureNumber(char c) {
         if ('0' <= c && c <= '9') {
             return true;
@@ -713,8 +760,12 @@ public class Main {
         if ('0' <= c && c <= '9') {
             return true;
         }
-        if (c == '.' || c == 'l' || c == 'L' || c == 'f' || c == 'F' || c == '_'
-                || c == 'x' || c == 'X' || c == 'B' || c == 'b' || c == 'o' || c == 'O') {
+        if (('a' <= c && c <= 'f')
+                || ('A' <= c && c <= 'F')
+                || c == '.' || c == '_'
+                || c == 'l' || c == 'L'
+                || c == 'x' || c == 'X'
+                || c == 'o' || c == 'O') {
             return true;
         }
         return false;

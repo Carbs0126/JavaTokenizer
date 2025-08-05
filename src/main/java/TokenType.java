@@ -14,6 +14,7 @@ public enum TokenType {
     PackagePath,
     ImportPath,
     Comma,
+    Colon,
     End,
     NotExistTokenNewLine
 }
