@@ -14,18 +14,35 @@ public class Main {
 
     public static void main(String[] argv) {
 
-        ArrayList<String> arrayList = readLines();
+        // data0.txt ok
+        // data1.txt PARSE ERROR --> [CommentOrString.None & TokenType.None] line : 1478, columnIndex : 81, current char : :
+        ArrayList<String> arrayList = readLines("data1.txt");
 
         ArrayList<SealedToken> tokens = getTokens(arrayList);
 
         StringBuilder tokensStr = new StringBuilder();
-        // test
+        // 展示 tokens
         if (tokens != null) {
+            SealedToken preToken = null;
+            SealedToken curToken = null;
+            boolean needSpace = false;
             for (SealedToken sealedToken : tokens) {
+                curToken = sealedToken;
+                if (preToken != null) {
+                    if (preToken.type == TokenType.Identifier && curToken.type == TokenType.Identifier) {
+                        needSpace = true;
+                    } else {
+                        needSpace = false;
+                    }
+                }
+                if (needSpace) {
+                    tokensStr.append(" ");
+                }
                 tokensStr.append(sealedToken.getLiteralStr());
+                preToken = curToken;
             }
         }
-        System.out.println("=================== ↓ tokens ↓ ===================");
+        System.out.println("=================== ↓ display tokens ↓ ===================");
         System.out.println(tokensStr);
     }
 
@@ -48,7 +65,7 @@ public class Main {
         int lineIndex = -1;
         for (String s : arrayList) {
             lineIndex++;
-            print("line ->|" + lineIndex + "|" + s);
+            print("line ->|" + (lineIndex + 1) + "|" + s);
             // 人工添加一个 换行 token，便于打印
             int strLength = s.length();
             if (sCommentOrString == CommentOrString.InSlashComment) {
@@ -246,21 +263,13 @@ public class Main {
                 continue;
             }
 
-            // todo
-//            if (false) {
-//                System.out.println("package is --> " + packageStr + "\n");
-//                for (String im : importStrArr) {
-//                    System.out.println("import is --> " + im + "\n");
-//                }
-//                return tokens;
-//            }
             if (penetratePackageAndImportSectionState == 1) {
                 penetratePackageAndImportSectionState = 2;
                 // 在这里收集 package 和 import
-                tokens.add(SealedToken.genPackageToken(packageStr.toString()));
+                tokens.add(SealedToken.genPackageToken(packageStr.substring(7))); // "package".length() == 7
                 tokens.add(SealedToken.genNewLineToken());
-                for (String im : importStrArr) {
-                    tokens.add(SealedToken.genPackageToken(im));
+                for (String importStr : importStrArr) {
+                    tokens.add(SealedToken.genPackageToken(importStr.substring(6))); // "import".length() == 6
                     tokens.add(SealedToken.genNewLineToken());
                 }
             }
@@ -604,10 +613,7 @@ public class Main {
                     }
                     continue;
                 } else if (sCommentOrString == CommentOrString.InString) {
-                    // todo 转义字符
-                    String x = "\n\"\' ";
                     if (isStringSymbol(c)) {
-                        // todo
                         // 检查前一个字符是否为转义符
                         if (sCurrentToken.literalStrLength() > 0 && isEscape(sCurrentToken.getLastChar())) {
                             // 前一个字符为转义字符，当前 " 字符仍然在 字符串内
@@ -722,11 +728,9 @@ public class Main {
         return c == '"';
     }
 
-    private static ArrayList<String> readLines() {
+    private static ArrayList<String> readLines(String fileName) {
 
         ArrayList arrayList = new ArrayList();
-
-        String fileName = "data.txt"; // 注意：不要加 "/"
 
         try (InputStream is = Main.class.getClassLoader().getResourceAsStream(fileName);
              BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
@@ -737,14 +741,14 @@ public class Main {
             }
 
         } catch (Exception e) {
-            printError("read lines", "读取文件失败: " + e.getMessage());
+            e.printStackTrace();
         }
 
         return arrayList;
     }
 
     private static void printError(String tag, String message) {
-        System.err.println("[" + tag + "] " + message);
+        System.err.println("PARSE ERROR --> [" + tag + "] " + message);
     }
 
     private static void print(String message) {

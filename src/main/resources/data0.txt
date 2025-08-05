@@ -1,0 +1,27 @@
+// 代码解析正常
+
+package /*DAFAFA    */ cn.carbs.tools;
+
+import java.io./*DAFAFA    */BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
+public class Main {
+    public static void main(String[] argv ) {
+        String fileName = "data.txt"; // 注意：不要加 "/"
+
+        try (InputStream is = Main.class.getClassLoader().getResourceAsStream(fileName);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+            }
+
+        } catch (Exception e) {
+            System.err.println("just for fun: " + e.getMessage());
+        }
+    }
+
+}
