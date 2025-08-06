@@ -4,15 +4,14 @@ public class SealedToken {
 
     public String literalStr;
 
-    // 类，存放类的全称
-    public String extra;
+    public int extraInt;
 
     @Override
     public String toString() {
         return " SealedToken{" +
                 "type=" + type +
                 ", literalStr='" + literalStr + '\'' +
-                ", extra='" + extra + '\'' +
+                ", extraInt='" + extraInt + '\'' +
                 '}';
     }
 

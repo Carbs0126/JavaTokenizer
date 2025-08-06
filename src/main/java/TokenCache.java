@@ -3,19 +3,21 @@
 // 2. 每个完整注释一个 token
 public class TokenCache {
 
+    public static final int IN_STRING_MODE_ESCAPE_IDLE = 0;
+    public static final int IN_STRING_MODE_ESCAPE_READY = 1;
+
     public TokenType type;
 
     public StringBuilder literalStr;
 
     // 类，存放类的全称
-    public StringBuilder extra;
+    public int extraInt;
 
     // 行列位置等
 
     public TokenCache() {
         type = TokenType.None;
         literalStr = new StringBuilder();
-        extra = new StringBuilder();
     }
 
     public void appendLiteralChar(char c) {
@@ -42,16 +44,14 @@ public class TokenCache {
         if (literalStr != null && literalStr.length() > 0) {
             sealedToken.literalStr = literalStr.toString();
         }
-        if (extra != null && extra.length() > 0) {
-            sealedToken.extra = extra.toString();
-        }
+        sealedToken.extraInt = extraInt;
         return sealedToken;
     }
 
     private void reset() {
         this.type = TokenType.None;
         this.literalStr.setLength(0);
-        this.extra.setLength(0);
+        this.extraInt = 0;
     }
 
 }

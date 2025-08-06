@@ -17,7 +17,7 @@ public class Main {
         // data0.txt success
         // data1.txt success
         // data2.txt success
-        // data3.txt fail
+        // data3.txt fail     (((ch = regex.charAt(1))-'0') 0 这里为什么是number类型？
         // data4.txt success
         // data5.txt success
         // data6.txt
@@ -304,6 +304,7 @@ public class Main {
                         } else if (isStringSymbol(c)) {
                             sCommentOrString = CommentOrString.InString;
                             sCurrentToken.type = TokenType.String;
+                            sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isSpace(c)) {
@@ -335,6 +336,7 @@ public class Main {
                             continue;
                         } else if (isCharSymbol(c)) {
                             sCurrentToken.type = TokenType.Char;
+                            sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isComma(c)) {
@@ -367,6 +369,7 @@ public class Main {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             sCommentOrString = CommentOrString.InString;
                             sCurrentToken.type = TokenType.String;
+                            sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isSpace(c)) {
@@ -432,6 +435,7 @@ public class Main {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             sCommentOrString = CommentOrString.InString;
                             sCurrentToken.type = TokenType.String;
+                            sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isComma(c)) {
@@ -481,22 +485,50 @@ public class Main {
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Char) {
-                        char x = '\"';
-                        if (isCharSymbol(c)) {
-                            // 如果前一个是转义符，那么当前这个仍然不能作为 char 的完结
-                            if (sCurrentToken.literalStrLength() > 0 && isEscape(sCurrentToken.getLastChar())) {
-                                sCurrentToken.appendLiteralChar(c);
-                            } else {
-                                // 收
+                        // todo todo 仿照
+                        if (sCurrentToken.extraInt == TokenCache.IN_STRING_MODE_ESCAPE_IDLE) {
+                            // 前一个字符不是 escape 转义字符
+                            if (isCharSymbol(c)) {
+                                // 当前字符为 ' 则结束当前 char
                                 sCurrentToken.appendLiteralChar(c);
                                 collectTokenAndResetCache(tokens, sCurrentToken);
                                 continue;
+                            } else {
+                                // 当前字符不为 "
+                                if (isEscape(c)) {
+                                    // 当前字符为 /
+                                    sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_READY;
+                                } else {
+                                    sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                                }
+                                // 字符串继续
+                                sCurrentToken.appendLiteralChar(c);
+                                continue;
                             }
                         } else {
-                            // append
+                            // 前一个字符是 escape 转义字符：
+                            // 1. 把当前字符加入到string中
                             sCurrentToken.appendLiteralChar(c);
+                            // 2. 取消转义模式
+                            sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                            // 3. 并继续string模式
                             continue;
                         }
+//                        if (isCharSymbol(c)) {
+//                            // 如果前一个是转义符，那么当前这个仍然不能作为 char 的完结
+//                            if (sCurrentToken.literalStrLength() > 0 && isEscape(sCurrentToken.getLastChar())) {
+//                                sCurrentToken.appendLiteralChar(c);
+//                            } else {
+//                                // 收
+//                                sCurrentToken.appendLiteralChar(c);
+//                                collectTokenAndResetCache(tokens, sCurrentToken);
+//                                continue;
+//                            }
+//                        } else {
+//                            // append
+//                            sCurrentToken.appendLiteralChar(c);
+//                            continue;
+//                        }
                     } else if (sCurrentToken.type == TokenType.DotConfirmLater) {
                         // todo 待验证
                         // float x = . 9f; // 格式错误
@@ -600,6 +632,7 @@ public class Main {
                             // todo 不可能，输出log
                             sCommentOrString = CommentOrString.InString;
                             sCurrentToken.type = TokenType.String;
+                            sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isSpace(c)) {
@@ -627,6 +660,7 @@ public class Main {
                             continue;
                         } else if (isCharSymbol(c)) {
                             sCurrentToken.type = TokenType.Char;
+                            sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isExpressionEnd(c)) {
@@ -656,21 +690,44 @@ public class Main {
                     }
                     continue;
                 } else if (sCommentOrString == CommentOrString.InString) {
-                    if (isStringSymbol(c)) {
-                        // 检查前一个字符是否为转义符
-                        if (sCurrentToken.literalStrLength() > 0 && isEscape(sCurrentToken.getLastChar())) {
-                            // 前一个字符为转义字符，当前 " 字符仍然在 字符串内
-                            sCurrentToken.appendLiteralChar(c);
-                        } else {
-                            // 结束当前字符串
+                    if (sCurrentToken.extraInt == TokenCache.IN_STRING_MODE_ESCAPE_IDLE) {
+                        // 前一个字符不是 escape 转义字符
+                        if (isStringSymbol(c)) {
+                            // 当前字符为 " 则结束当前字符串
                             sCommentOrString = CommentOrString.None;
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+//                            // 检查前一个字符是否为转义符
+//                            if (sCurrentToken.literalStrLength() > 0 && isEscape(sCurrentToken.getLastChar())) {
+//                                // 前一个字符为转义字符，当前 " 字符仍然在 字符串内
+//                                sCurrentToken.appendLiteralChar(c);
+//                            } else {
+//                                // 结束当前字符串
+//                                sCommentOrString = CommentOrString.None;
+//                                sCurrentToken.appendLiteralChar(c);
+//                                collectTokenAndResetCache(tokens, sCurrentToken);
+//                            }
+//                            continue;
+                        } else {
+                            // 当前字符不为 "
+                            if (isEscape(c)) {
+                                // 当前字符为 /
+                                sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_READY;
+                            } else {
+                                sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                            }
+                            // 字符串继续
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
                         }
-                        continue;
                     } else {
-                        // 字符串继续
+                        // 前一个字符是 escape 转义字符：
+                        // 1. 把当前字符加入到string中
                         sCurrentToken.appendLiteralChar(c);
+                        // 2. 取消转义模式
+                        sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                        // 3. 并继续string模式
                         continue;
                     }
                 }
