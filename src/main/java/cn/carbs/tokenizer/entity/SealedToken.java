@@ -1,3 +1,7 @@
+package cn.carbs.tokenizer.entity;
+
+import cn.carbs.tokenizer.type.TokenType;
+
 public class SealedToken {
 
     public TokenType type;
@@ -8,7 +12,7 @@ public class SealedToken {
 
     @Override
     public String toString() {
-        return " SealedToken{" +
+        return "SealedToken{" +
                 "type=" + type +
                 ", literalStr='" + literalStr + '\'' +
                 ", extraInt='" + extraInt + '\'' +

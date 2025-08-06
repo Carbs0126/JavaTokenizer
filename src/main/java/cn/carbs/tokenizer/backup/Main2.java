@@ -1,13 +1,19 @@
-import state.CommentOrString;
-import state.ImportState;
+package cn.carbs.tokenizer.backup;
+
+import cn.carbs.tokenizer.entity.SealedToken;
+import cn.carbs.tokenizer.entity.TokenCache;
+import cn.carbs.tokenizer.state.CommentOrString;
+import cn.carbs.tokenizer.state.ImportState;
+import cn.carbs.tokenizer.type.SectionType;
+import cn.carbs.tokenizer.type.TokenType;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
-import /**/ java.io./*DAFAFA    */InputStreamReader;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
-public class Main {
+public class Main2 {
 
     private static TokenCache sCurrentToken = new TokenCache();
     private static CommentOrString sCommentOrString = CommentOrString.None;
@@ -17,7 +23,7 @@ public class Main {
         // data0.txt success
         // data1.txt success
         // data2.txt success
-        // data3.txt fail     (((ch = regex.charAt(1))-'0') 0 这里为什么是number类型？
+        // data3.txt success
         // data4.txt success
         // data5.txt success
         // data6.txt
@@ -138,7 +144,7 @@ public class Main {
                                 // 收 comment
                                 sCommentOrString = CommentOrString.None;
                                 // todo
-//                                curToken.type = TokenType.CommentBlock;
+//                                curToken.type = CommentBlock;
                                 continue;
                             } else {
                                 sCommentOrString = CommentOrString.InBlockComment;
@@ -840,7 +846,7 @@ public class Main {
 
         ArrayList arrayList = new ArrayList();
 
-        try (InputStream is = Main.class.getClassLoader().getResourceAsStream(fileName);
+        try (InputStream is = Main2.class.getClassLoader().getResourceAsStream(fileName);
              BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
 
             String line;

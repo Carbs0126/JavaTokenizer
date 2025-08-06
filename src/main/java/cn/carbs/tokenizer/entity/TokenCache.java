@@ -1,3 +1,6 @@
+package cn.carbs.tokenizer.entity;
+
+import cn.carbs.tokenizer.type.TokenType;
 
 // 1. 每个词一个 token
 // 2. 每个完整注释一个 token

@@ -203,10 +203,10 @@ public class ExpandableTextView extends TextView{
     }
 
     /**
-     * get the current state of ExpandableTextView
+     * get the current cn.carbs.tokenizer.state of ExpandableTextView
      * @return
-     *      STATE_SHRINK if in shrink state
-     *      STATE_EXPAND if in expand state
+     *      STATE_SHRINK if in shrink cn.carbs.tokenizer.state
+     *      STATE_EXPAND if in expand cn.carbs.tokenizer.state
      */
     public int getExpandState(){
         return mCurrState;

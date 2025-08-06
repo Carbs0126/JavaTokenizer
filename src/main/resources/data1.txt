@@ -69,7 +69,7 @@ public class NumberPickerView extends View {
     // only used in wrap_content mode
     private static final int DEFAULT_ITEM_PADDING_DP_V = 2;
 
-    // message's what argument to refresh current state, used by mHandler
+    // message's what argument to refresh current cn.carbs.tokenizer.state, used by mHandler
     private static final int HANDLER_WHAT_REFRESH = 1;
 
     // message's what argument to respond value changed event, used by mHandler
@@ -214,7 +214,7 @@ public class NumberPickerView extends View {
     private OnScrollListener mOnScrollListener;//compatible for NumberPicker
     private OnValueChangeListenerInScrolling mOnValueChangeListenerInScrolling;//response onValueChanged in scrolling
 
-    // The current scroll state of the NumberPickerView.
+    // The current scroll cn.carbs.tokenizer.state of the NumberPickerView.
     private int mScrollState = OnScrollListener.SCROLL_STATE_IDLE;
 
     public NumberPickerView(Context context) {
@@ -1315,7 +1315,7 @@ public class NumberPickerView extends View {
         int index;
         int textColor;
         float textSize;
-        float fraction = 0f;// fraction of the item in state between normal and selected, in[0, 1]
+        float fraction = 0f;// fraction of the item in cn.carbs.tokenizer.state between normal and selected, in[0, 1]
         float textSizeCenterYOffset;
 
         for (int i = 0; i < mShownCount + 1; i++) {

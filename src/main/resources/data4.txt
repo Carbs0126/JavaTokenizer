@@ -841,7 +841,7 @@ public class ArrayList<E> extends AbstractList<E>
     }
 
     /**
-     * Saves the state of the {@code ArrayList} instance to a stream
+     * Saves the cn.carbs.tokenizer.state of the {@code ArrayList} instance to a stream
      * (that is, serializes it).
      *
      * @param s the stream
@@ -1544,7 +1544,7 @@ public class ArrayList<E> extends AbstractList<E>
          * within-thread interference, but detect enough problems to
          * be worthwhile in practice. To carry this out, we (1) lazily
          * initialize fence and expectedModCount until the latest
-         * point that we need to commit to the state we are checking
+         * point that we need to commit to the cn.carbs.tokenizer.state we are checking
          * against; thus improving precision.  (This doesn't apply to
          * SubLists, that create spliterators with current non-lazy
          * values).  (2) We perform only a single

@@ -1,4 +1,4 @@
-package state;
+package cn.carbs.tokenizer.state;
 
 // 单个星号不能作为 block comment /*/
 
