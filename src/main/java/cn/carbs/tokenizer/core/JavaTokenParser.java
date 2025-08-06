@@ -11,11 +11,11 @@ import java.util.ArrayList;
 
 public class JavaTokenParser {
 
-    private static TokenCache sCurrentToken = new TokenCache();
-    private static CommentOrString sCommentOrString = CommentOrString.None;
+    private TokenCache sCurrentToken = new TokenCache();
+    private CommentOrString sCommentOrString = CommentOrString.None;
 
     // 获取一个 file 的 tokens
-    public static ArrayList<SealedToken> getTokens(ArrayList<String> arrayList) {
+    public ArrayList<SealedToken> getTokens(ArrayList<String> arrayList) {
         if (arrayList == null || arrayList.size() == 0) {
             return new ArrayList<>();
         }
@@ -33,7 +33,7 @@ public class JavaTokenParser {
         int lineIndex = -1;
         for (String s : arrayList) {
             lineIndex++;
-            print("line ->|" + (lineIndex + 1) + "|" + s);
+            // print("line ->|" + (lineIndex + 1) + "|" + s);
             // 人工添加一个 换行 token，便于打印
             int strLength = s.length();
             if (sCommentOrString == CommentOrString.InSlashComment) {
@@ -474,23 +474,7 @@ public class JavaTokenParser {
                             // 3. 并继续string模式
                             continue;
                         }
-//                        if (isCharSymbol(c)) {
-//                            // 如果前一个是转义符，那么当前这个仍然不能作为 char 的完结
-//                            if (sCurrentToken.literalStrLength() > 0 && isEscape(sCurrentToken.getLastChar())) {
-//                                sCurrentToken.appendLiteralChar(c);
-//                            } else {
-//                                // 收
-//                                sCurrentToken.appendLiteralChar(c);
-//                                collectTokenAndResetCache(tokens, sCurrentToken);
-//                                continue;
-//                            }
-//                        } else {
-//                            // append
-//                            sCurrentToken.appendLiteralChar(c);
-//                            continue;
-//                        }
                     } else if (sCurrentToken.type == TokenType.DotConfirmLater) {
-                        // todo 待验证
                         // float x = . 9f; // 格式错误
                         // float x = .9f;  // 格式正确
                         if (isPureNumber(c)) {
