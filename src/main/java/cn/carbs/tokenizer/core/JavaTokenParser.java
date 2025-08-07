@@ -173,6 +173,10 @@ public class JavaTokenParser {
                                 }
                             } else if (importState == ImportState.Processing) {
                                 if (isSpace(c)) {
+                                    if (importStrCache.toString().equals("importstatic")) {
+                                        // todo 直接将 static 信息去掉，后续考虑是否还用得到
+                                        importStrCache.setLength(6); // "import".length() == 6
+                                    }
                                     continue;
                                 } else if (isLegalIdentifierPostfix(c) || isDot(c)) {
                                     importStrCache.append(c);

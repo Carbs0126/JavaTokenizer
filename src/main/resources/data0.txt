@@ -2,7 +2,7 @@
 
 package /*DAFAFA    */ cn.carbs.tools;
 
-import java.io./*DAFAFA    */BufferedReader;
+import static java.io./*DAFAFA    */BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
