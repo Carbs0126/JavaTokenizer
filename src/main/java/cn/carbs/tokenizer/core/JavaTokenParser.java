@@ -239,7 +239,7 @@ public class JavaTokenParser {
                     tokens.add(SealedToken.genNewLineToken());
                 }
                 for (String importStr : importStrArr) {
-                    tokens.add(SealedToken.genPackageToken(importStr.substring(6))); // "import".length() == 6
+                    tokens.add(SealedToken.genImportToken(importStr.substring(6))); // "import".length() == 6
                     tokens.add(SealedToken.genNewLineToken());
                 }
             }
