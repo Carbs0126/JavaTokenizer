@@ -4,8 +4,12 @@ package /*DAFAFA    */ cn.carbs.tools;
 
 import static java.io./*DAFAFA    */BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.io.
+InputStreamReader;   import   java.
+nio.charset.
+StandardCharsets;
+import cn.carbs.ttt.R.layout;
+import static cn.carbs.ttt.R.layout.my_textview;
 
 public class cn.carbs.tokenizer.Main {
     public static void main(String[] argv ) {
