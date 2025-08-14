@@ -10,6 +10,9 @@ public class ReferencedToken {
 
     public String completedTokenStr;
 
+    // R.layout.main_activity
+    public String simpleReferenceStr;
+
     public ReferencedToken(IdentifierMatcher identifierMatcher, ArrayList<SealedToken> completeIdentifierToken) {
         this.identifierMatcher = identifierMatcher;
         StringBuilder tempStringBuilder = new StringBuilder();
@@ -29,11 +32,17 @@ public class ReferencedToken {
         this.completedTokenStr = completeTokenStr;
     }
 
+    public ReferencedToken setStandardSimpleReference(String simpleReferenceStr) {
+        this.simpleReferenceStr = simpleReferenceStr;
+        return this;
+    }
+
     @Override
     public String toString() {
         return ">>> ReferencedToken{" +
                 "identifierMatcher=" + identifierMatcher +
                 ", completedTokenStr='" + completedTokenStr + '\'' +
+                ", simpleReferenceStr='" + simpleReferenceStr + '\'' +
                 '}';
     }
 }

@@ -78,7 +78,7 @@ public class Main {
             for (String certainRPath : resourceRFileImportPaths) {
                 if (importPath != null && importPath.startsWith(certainRPath)) {
                     // 例如 importPath = cn.carbs.tools.R  certainRPath = cn.carbs.tools.R
-                    IdentifierMatcher identifierMatcher = Utils.getIdentifierMatcher(importPath, certainRPath);
+                    IdentifierMatcher identifierMatcher = Utils.getIdentifierMatcherForImport(importPath, certainRPath);
                     if (identifierMatcher != null) {
                         identifierMatcherMap.put(identifierMatcher.lastIdentifier, identifierMatcher);
                         System.out.println("[IdentifierMatcher] --> ");
@@ -125,9 +125,9 @@ public class Main {
                                     // todo wang
                                     // 可疑
                                     IdentifierMatcher wholePackagePathMatcher = new IdentifierMatcher(s, completeTokenStr)
-                                            .setStandardImport(s)
+                                            .setStandardImport(s);
+                                    ReferencedToken referencedToken = new ReferencedToken(wholePackagePathMatcher, completeTokenStr)
                                             .setStandardSimpleReference(completeTokenStr.substring(s.lastIndexOf('.') + 1));
-                                    ReferencedToken referencedToken = new ReferencedToken(wholePackagePathMatcher, completeTokenStr);
 
                                     System.out.println("[MAYBE] ReferencedToken 1 --> " + referencedToken);
                                     break;
@@ -181,10 +181,10 @@ public class Main {
                                     // todo wang
                                     // 可疑
                                     IdentifierMatcher wholePackagePathMatcher = new IdentifierMatcher(s, completeTokenStr)
-                                            .setStandardImport(s)
-                                            .setStandardSimpleReference(completeTokenStr.substring(s.lastIndexOf('.') + 1));
+                                            .setStandardImport(s);
 
-                                    ReferencedToken referencedToken = new ReferencedToken(wholePackagePathMatcher, completeTokenStr);
+                                    ReferencedToken referencedToken = new ReferencedToken(wholePackagePathMatcher, completeTokenStr)
+                                            .setStandardSimpleReference(completeTokenStr.substring(s.lastIndexOf('.') + 1));
                                     System.out.println("[MAYBE] ReferencedToken 3 --> " + referencedToken);
                                     break;
                                 }

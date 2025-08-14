@@ -29,12 +29,11 @@ public class IdentifierMatcher {
     public String wholePath;
     // xxx.xxx.xxx.R
     public String standardImport;
-    // R.layout.main_activity
-    public String simpleReference;
 
-    public IdentifierMatcher(String lastIdentifier, String importPath, String iPrefix, String rPostfix) {
+    public IdentifierMatcher(String lastIdentifier, String importPath, String standardImport, String iPrefix, String rPostfix) {
         this.lastIdentifier = lastIdentifier;
         this.importPath = importPath;
+        this.standardImport = standardImport;
         this.iPrefix = iPrefix;
         this.rPostfix = rPostfix;
     }
@@ -49,10 +48,16 @@ public class IdentifierMatcher {
         return this;
     }
 
-    public IdentifierMatcher setStandardSimpleReference(String simpleReference) {
-        this.simpleReference = simpleReference;
-        return this;
-    }
+//    public IdentifierMatcher setStandardSimpleReference(String simpleReference) {
+//        this.simpleReference = simpleReference;
+//        return this;
+//    }
+
+//    public IdentifierMatcher copy() {
+//        IdentifierMatcher copied = new IdentifierMatcher(
+//                this.lastIdentifier, this.importPath, this.standardImport, this.iPrefix, this.rPostfix);
+//        return copied;
+//    }
 
     @Override
     public String toString() {
@@ -63,7 +68,6 @@ public class IdentifierMatcher {
                 ", rPostfix='" + rPostfix + '\'' +
                 ", wholePath='" + wholePath + '\'' +
                 ", standardImport='" + standardImport + '\'' +
-                ", simpleReference='" + simpleReference + '\'' +
                 '}';
     }
 }

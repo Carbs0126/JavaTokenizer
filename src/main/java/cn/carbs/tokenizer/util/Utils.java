@@ -34,7 +34,7 @@ public class Utils {
         return arrayList;
     }
 
-    public static IdentifierMatcher getIdentifierMatcher(String importPath, String certainRPath) {
+    public static IdentifierMatcher getIdentifierMatcherForImport(String importPath, String certainRPath) {
         if (importPath == null || certainRPath == null || !importPath.startsWith(certainRPath)) {
             return null;
         }
@@ -59,7 +59,7 @@ public class Utils {
         String iPrefix = importPath.substring(lastIndexOfDotForCertain + 1, lastIndexOfDotForImport + 1);
 
 //        System.out.println("lastIdentifier : " + lastIdentifier + "  rPostfix : " + rPostfix);
-        return new IdentifierMatcher(lastIdentifier, importPath, iPrefix, rPostfix);
+        return new IdentifierMatcher(lastIdentifier, importPath, certainRPath, iPrefix, rPostfix);
     }
 
     public static ReferencedToken checkTokenMatched(HashMap<String, IdentifierMatcher> identifierMatcherMap,
@@ -104,9 +104,10 @@ public class Utils {
                     // todo wang 必须命中某种规则? 比如 R.layout
                     // 这里暂时直接把这个 token 拿出来
                     // 命中！
-//                    return new ReferencedToken(entry.getValue(), completeIdentifierToken);
                     // todo wang 这里一定有问题，IdentifierMatcher 必须重新复制
-                    return new ReferencedToken(entry.getValue(), completeTokenStringBuilder);
+                    IdentifierMatcher value = entry.getValue();
+                    return new ReferencedToken(value, completeTokenStringBuilder)
+                            .setStandardSimpleReference(value.iPrefix + completeTokenStringBuilder.toString());
                 } else {
                     // todo wang
                     /*
@@ -135,7 +136,9 @@ public class Utils {
                     // 此时需要补充一下 prefix，补充到 R
                     // todo wang
                     // todo wang 这里一定有问题，IdentifierMatcher 必须重新复制
-                    return new ReferencedToken(entry.getValue(), completeTokenStringBuilder);
+                    IdentifierMatcher value = entry.getValue();
+                    return new ReferencedToken(value, completeTokenStringBuilder)
+                            .setStandardSimpleReference(value.iPrefix + completeTokenStringBuilder.toString());
                 }
             }
         }
