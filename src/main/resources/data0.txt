@@ -8,6 +8,7 @@ import java.io.
 InputStreamReader;   import   java.
 nio.charset.
 StandardCharsets;
+import cn.carbs.ttt.R;
 import cn.carbs.ttt.R.layout;
 import static cn.carbs.ttt.R.layout.my_textview;
 
@@ -22,7 +23,9 @@ public class cn.carbs.tokenizer.Main {
             while ((line = reader.readLine()) != null) {
                 System.out.println(line);
             }
-
+            setContentView(R.layout.my_activity);
+            int var = my_textview;
+            setcontent(cn.carbs.tokenizer.R.layout.some_image_view);
         } catch (Exception e) {
             System.err.println("just for fun: " + e.getMessage());
         }

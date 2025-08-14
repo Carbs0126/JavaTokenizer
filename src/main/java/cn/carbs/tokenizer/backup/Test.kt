@@ -9,8 +9,6 @@ import cn.carbs.tokenizer.core
 open class Test {
 
     fun tess() {
-//        SealedToken()
-//            .
-//            var literalStr = 5;
+
     }
 }

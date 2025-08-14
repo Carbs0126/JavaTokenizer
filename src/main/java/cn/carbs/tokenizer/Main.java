@@ -9,6 +9,8 @@ import static cn.carbs.tokenizer.backup.R.id;
 //import static cn.carbs.tokenizer.backup.R.id.my_button;
 import cn.carbs.tokenizer.core.JavaTokenParser;
 import cn.carbs.tokenizer.entity.SealedToken;
+import cn.carbs.tokenizer.search.IdentifierMatcher;
+import cn.carbs.tokenizer.search.ReferencedToken;
 import cn.carbs.tokenizer.type.TokenType;
 import cn.carbs.tokenizer.util.Utils;
 
@@ -18,12 +20,8 @@ import java.util.HashMap;
 public class Main {
 
     public static void main(String[] argv) {
-
 //         analyseJavaFileAndShow("data0.txt");
-
-//        int x = my_button;
 //        testAllCases();
-//        int x = id.my_button;
 
         ArrayList<String> resourceRFilePaths = new ArrayList<>();
 //        resourceRFilePaths.add("cn.carbs.tokenizer.backup.R");
@@ -71,22 +69,147 @@ public class Main {
             importsPaths.add(possibleRPath);
         }
 
-        HashMap<String, String> identifierMatcherMap = new HashMap();
+        HashMap<String, IdentifierMatcher> identifierMatcherMap = new HashMap();
+        int minLengthOfImportPath = Integer.MAX_VALUE;
+        // 3. 遍历所有当前文件的 importPaths，并逐一判断 importPath 是否以 resourceRFileImportPaths 开头，
+        //    如果是，则把这个 importPath 最后一个 dot 后面的 string（记作 lastId） 加入到 availableResourceStarters 数据结构数组中，
+        //    并把 importPath 和 resourceRFileImportPaths 对比剩余的部分，即 R. 的部分拿出来记下（如记作 postfix），用于后续 identifier 的判断
         for (String importPath : importsPaths) {
             for (String certainRPath : resourceRFileImportPaths) {
                 if (importPath != null && importPath.startsWith(certainRPath)) {
                     // 例如 importPath = cn.carbs.tools.R  certainRPath = cn.carbs.tools.R
-                    Utils.IdentifierMatcher identifierMatcher = Utils.getIdentifierMatcher(importPath, certainRPath);
+                    IdentifierMatcher identifierMatcher = Utils.getIdentifierMatcher(importPath, certainRPath);
                     if (identifierMatcher != null) {
-                        identifierMatcherMap.put(identifierMatcher.lastIdentifier, identifierMatcher.rPostfix);
+                        identifierMatcherMap.put(identifierMatcher.lastIdentifier, identifierMatcher);
                         System.out.println("[IdentifierMatcher] --> ");
                         System.out.println("importPath : " + importPath);
-                        System.out.println("lastIdentifier : " + identifierMatcher.lastIdentifier + ", rPostfix : " + identifierMatcher.rPostfix);
+                        System.out.println("lastIdentifier : " + identifierMatcher.lastIdentifier);
+                        System.out.println("iPrefix : " + identifierMatcher.iPrefix);
+                        System.out.println("rPostfix : " + identifierMatcher.rPostfix);
+                        if (identifierMatcher.importPath.length() < minLengthOfImportPath) {
+                            minLengthOfImportPath = identifierMatcher.importPath.length();
+                        }
                     }
                 }
             }
         }
+        System.out.println("minLengthOfImportPath : " + minLengthOfImportPath);
+        System.out.println("==================================================");
+        // 4. 遍历所有 SealedToken，如果 SealedToken 是identifier类型，一直往后连dot类型，直到停止，即找出了一个完整对象，记作 completeIdentifierToken。
+        //    如果当前token不是identifier类型，则继续遍历。
 
+        ArrayList<SealedToken> completeIdentifierToken = new ArrayList<>();
+        StringBuilder completeToken = new StringBuilder();
+        TokenType prevAvailableTokenType = TokenType.None;
+        for (int i = 0; i < tokens.size(); i++) {
+            SealedToken currentToken = tokens.get(i);
+            if (currentToken.type == TokenType.Identifier) {
+                if (prevAvailableTokenType != TokenType.Identifier) {
+                    // 继续收集
+                    completeIdentifierToken.add(currentToken);
+                } else {
+                    completeToken.setLength(0);
+                    if (completeIdentifierToken.size() > 0) {
+                        for (int m = 0; m < completeIdentifierToken.size(); m++) {
+                            completeToken.append(completeIdentifierToken.get(m).literalStr);
+                        }
+                        // todo wang
+                        System.out.println("-> " + completeToken);
+
+                        if (completeToken.length() >= minLengthOfImportPath) {
+                            String completeTokenStr = completeToken.toString();
+
+                            for (String s : resourceRFileImportPaths) {
+                                if (completeTokenStr.startsWith(s)) {
+                                    // 全路径的 cn.carbs.tools.R.layout.xxx
+                                    // todo wang
+                                    // 可疑
+                                    IdentifierMatcher wholePackagePathMatcher = new IdentifierMatcher(s, completeTokenStr)
+                                            .setStandardImport(s)
+                                            .setStandardSimpleReference(completeTokenStr.substring(s.lastIndexOf('.') + 1));
+                                    ReferencedToken referencedToken = new ReferencedToken(wholePackagePathMatcher, completeTokenStr);
+
+                                    System.out.println("[MAYBE] ReferencedToken 1 --> " + referencedToken);
+                                    break;
+                                }
+                            }
+                        } else {
+                            // 小于全路径
+                            ReferencedToken referencedToken = Utils.checkTokenMatched(identifierMatcherMap, completeIdentifierToken, completeToken);
+                            if (referencedToken != null) {
+                                // todo wang 可能命中！
+                                System.out.println("[MAYBE] ReferencedToken 2 --> " + referencedToken);
+                            }
+                        }
+                    }
+                    // 清空
+                    completeIdentifierToken.clear();
+                    completeIdentifierToken.add(currentToken);
+                }
+                prevAvailableTokenType = TokenType.Identifier;
+                continue;
+            } else if (currentToken.type == TokenType.DotForIdentifier) {
+                if (prevAvailableTokenType != TokenType.DotForIdentifier) {
+                    // 继续收集
+                    completeIdentifierToken.add(currentToken);
+                } else {
+                    // 连着两个 .. 清空
+                    completeIdentifierToken.clear();
+                }
+                prevAvailableTokenType = TokenType.DotForIdentifier;
+                continue;
+            } else {
+                prevAvailableTokenType = TokenType.None;
+                if (completeIdentifierToken.size() == 0) {
+                    continue;
+                } else {
+                    completeToken.setLength(0);
+                    for (int m = 0; m < completeIdentifierToken.size(); m++) {
+                        completeToken.append(completeIdentifierToken.get(m).literalStr);
+                    }
+                    // todo wag
+//                    System.out.println("=> " + completeToken);
+
+                    if (completeIdentifierToken.size() > 0) {
+                        // todo 有问题---
+                        if (completeToken.length() >= minLengthOfImportPath) {
+                            String completeTokenStr = completeToken.toString();
+
+                            for (String s : resourceRFileImportPaths) {
+                                if (completeTokenStr.startsWith(s)) {
+                                    // 全路径的 cn.carbs.tools.R.layout.xxx
+                                    // todo wang
+                                    // 可疑
+                                    IdentifierMatcher wholePackagePathMatcher = new IdentifierMatcher(s, completeTokenStr)
+                                            .setStandardImport(s)
+                                            .setStandardSimpleReference(completeTokenStr.substring(s.lastIndexOf('.') + 1));
+
+                                    ReferencedToken referencedToken = new ReferencedToken(wholePackagePathMatcher, completeTokenStr);
+                                    System.out.println("[MAYBE] ReferencedToken 3 --> " + referencedToken);
+                                    break;
+                                }
+                            }
+                            // 没有命中 比如 R.layout.xxxxxxx_xxxxxxxxxx
+                            // 小于全路径
+                            ReferencedToken referencedToken = Utils.checkTokenMatched(identifierMatcherMap, completeIdentifierToken, completeToken);
+                            if (referencedToken != null) {
+                                // todo wang 可能命中！
+                                System.out.println("[MAYBE] ReferencedToken 4 --> " + referencedToken);
+                            }
+                        } else {
+                            // 小于全路径
+                            ReferencedToken referencedToken = Utils.checkTokenMatched(identifierMatcherMap, completeIdentifierToken, completeToken);
+                            if (referencedToken != null) {
+                                // todo wang 可能命中！
+                                System.out.println("[MAYBE] ReferencedToken 5 --> " + referencedToken);
+                            }
+                        }
+                    }
+                    // 清空
+                    completeIdentifierToken.clear();
+                }
+            }
+        }
 
         /*
          1. 首先假设引入了一个 current.package.path.R 这样一个文件;（必须到 .R 结束）
@@ -96,7 +219,8 @@ public class Main {
          3. 遍历所有当前文件的 importPaths，并逐一判断 importPath 是否以 resourceRFileImportPaths 开头，
             如果是，则把这个 importPath 最后一个 dot 后面的 string（记作 lastId） 加入到 availableResourceStarters 数据结构数组中，
             并把 importPath 和 resourceRFileImportPaths 对比剩余的部分，即 R. 的部分拿出来记下（如记作 postfix），用于后续 identifier 的判断
-         4. 遍历所有 SealedToken，如果 SealedToken 是identifier类型，一直往后连dot类型，直到停止，即找出了一个完整对象，记作 completeIdentifierToken。如果当前token不是identifier类型，则继续遍历。
+         4. 遍历所有 SealedToken，如果 SealedToken 是identifier类型，一直往后连dot类型，直到停止，即找出了一个完整对象，记作 completeIdentifierToken。
+         如果当前token不是identifier类型，则继续遍历。
               // 先获取 resourceRFileImportPaths 中最短元素 length
               if (completeIdentifierToken .length > resourceRFileImportPaths 中最短元素 length
                     && completeIdentifierToken 以某个 预设的 resourceRFileImportPaths 中的某一个开头) {
