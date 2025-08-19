@@ -1,22 +1,23 @@
 package cn.carbs.tokenizer.core;
 
 import cn.carbs.tokenizer.entity.SealedToken;
-import cn.carbs.tokenizer.type.CodeSectionType;
 import cn.carbs.tokenizer.entity.TokenCache;
-import cn.carbs.tokenizer.type.TokenType;
 import cn.carbs.tokenizer.state.CommentOrString;
 import cn.carbs.tokenizer.state.ImportState;
+import cn.carbs.tokenizer.type.CodeSectionType;
+import cn.carbs.tokenizer.type.TokenType;
 import cn.carbs.tokenizer.util.Log;
 
 import java.util.ArrayList;
 
-public class JavaTokenParser implements ITokenParser {
+//
+public class KotlinTokenParser implements ITokenParser {
 
     private TokenCache sCurrentToken = new TokenCache();
     private CommentOrString sCommentOrString = CommentOrString.None;
     private String absFileName;
 
-    public JavaTokenParser(String absFileName) {
+    public KotlinTokenParser(String absFileName) {
         this.absFileName = absFileName;
     }
 
@@ -32,14 +33,20 @@ public class JavaTokenParser implements ITokenParser {
 
         ArrayList<String> importStrArr = new ArrayList<>();
         StringBuilder importStrCache = new StringBuilder();
+
+        TokenType prePackageTokenType = TokenType.None;
+        TokenType preValidPackageTokenType = TokenType.None;
+
         ImportState importState = ImportState.None;
+        TokenType preImportTokenType = TokenType.None;
+        TokenType preValidImportTokenType = TokenType.None;
 
         int penetratePackageAndImportSectionState = 0;
 
         int lineIndex = -1;
         for (String s : arrayList) {
             lineIndex++;
-            // print("line ->|" + (lineIndex + 1) + "|" + s);
+//            print("KT line ->|" + (lineIndex + 1) + "|" + s);
             // 人工添加一个 换行 token，便于打印
             int strLength = s.length();
             if (sCommentOrString == CommentOrString.InSlashComment) {
@@ -50,6 +57,10 @@ public class JavaTokenParser implements ITokenParser {
             }
             if (codeSectionType != CodeSectionType.ContentSection) {
                 // 当 section 位于 none 或者 package 或者 import 时
+                // 新的一行，把换行符作为space
+                // todo wang 解析 import 也用相同思路
+                prePackageTokenType = TokenType.Space;
+                preImportTokenType = TokenType.Space;
                 for (int i = 0; i < strLength; i++) {
                     char c = s.charAt(i);
                     if (codeSectionType == CodeSectionType.None) {
@@ -57,16 +68,19 @@ public class JavaTokenParser implements ITokenParser {
                             if (isSpace(c)) {
                                 continue;
                             } else if (c == 'p' && i < strLength - 1 && s.charAt(i + 1) == 'a') {
-                                // package public private 多个关键字以 p 开头
-                                codeSectionType = CodeSectionType.PackageSection;
                                 packageStr.append(c);
+                                codeSectionType = CodeSectionType.PackageSection;
+                                prePackageTokenType = TokenType.Identifier;
+                                preValidPackageTokenType = TokenType.Identifier;
                                 continue;
                             } else if (c == 'i' && i < strLength - 1 && s.charAt(i + 1) == 'm') {
                                 // 有可能是 interface
                                 // 无 package 声明，直接进入 import
+                                importStrCache.append(c);
                                 codeSectionType = CodeSectionType.ImportSection;
                                 importState = ImportState.Processing;
-                                importStrCache.append("i");
+                                preImportTokenType = TokenType.Identifier;
+                                preValidImportTokenType = TokenType.Identifier;
                                 continue;
                             } else if (isCommentStarter(c)) {
                                 sCommentOrString = CommentOrString.MayCommentStarter;
@@ -85,11 +99,11 @@ public class JavaTokenParser implements ITokenParser {
                             if (isCommentStarter(c)) {
                                 sCommentOrString = CommentOrString.InSlashComment;
                                 continue;
-                            } else if (c == '*') {
+                            } else if (isStar(c)) {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.d("package or import 0", " current char : " + c, absFileName);
+                                Log.d("package or import 0", " current char : " + c, this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
@@ -113,18 +127,51 @@ public class JavaTokenParser implements ITokenParser {
                             }
                         }
                     } else if (codeSectionType == CodeSectionType.PackageSection) {
+                        // kotlin 中，package xxx 后面可以不以分号结尾
                         if (sCommentOrString == CommentOrString.None) {
+                            // todo
                             if (isSpace(c)) {
+                                prePackageTokenType = TokenType.Space;
                                 continue;
-                            } else if (isLegalIdentifierPostfix(c) || isDot(c)) {
-                                codeSectionType = CodeSectionType.PackageSection;
+                            } else if (isDot(c)) {
                                 packageStr.append(c);
+                                prePackageTokenType = TokenType.DotForIdentifier;
+                                preValidPackageTokenType = TokenType.DotForIdentifier;
                                 continue;
                             } else if (isExpressionEnd(c)) {
-                                // 在 ImportSection 分支判断是否有可能进入 class section
-                                codeSectionType = CodeSectionType.ImportSection;
                                 packageStr.append(c);
+                                codeSectionType = CodeSectionType.ImportSection;
+                                prePackageTokenType = TokenType.None;
+                                preValidPackageTokenType = TokenType.None;
                                 continue;
+                            } else if (isLegalIdentifierPostfix(c)) {
+                                if (prePackageTokenType == TokenType.Space && preValidPackageTokenType == TokenType.Identifier) {
+                                    // 直接进入import
+                                    if ("package".equals(packageStr.toString())) {
+                                        // 继续解析
+                                        packageStr.append(c);
+                                        prePackageTokenType = TokenType.Identifier;
+                                        preValidPackageTokenType = TokenType.Identifier;
+                                    } else {
+                                        // todo 判断 "im" 前缀
+                                        if (c == 'i' && i < strLength - 1 && s.charAt(i + 1) == 'm') {
+                                            importStrCache.append(c);
+                                            codeSectionType = CodeSectionType.ImportSection;
+                                            importState = ImportState.Processing;
+                                            preImportTokenType = TokenType.Identifier;
+                                            preValidImportTokenType = TokenType.Identifier;
+                                        } else {
+                                            codeSectionType = CodeSectionType.ContentSection;
+                                            penetratePackageAndImportSectionState = 1;
+                                        }
+                                    }
+                                    continue;
+                                } else {
+                                    packageStr.append(c);
+                                    prePackageTokenType = TokenType.Identifier;
+                                    preValidPackageTokenType = TokenType.Identifier;
+                                    continue;
+                                }
                             } else if (isCommentStarter(c)) {
                                 sCommentOrString = CommentOrString.MayCommentStarter;
                                 continue;
@@ -160,48 +207,60 @@ public class JavaTokenParser implements ITokenParser {
                     } else if (codeSectionType == CodeSectionType.ImportSection) {
                         // 可能有注释
                         if (sCommentOrString == CommentOrString.None) {
-                            if (importState == ImportState.None) {
-                                if (isSpace(c)) {
-                                    continue;
-                                } else if (c == 'i' && i < strLength - 1 && s.charAt(i + 1) == 'm') {
-                                    importState = ImportState.Processing;
-                                    importStrCache.append("i");
-                                    continue;
-                                } else if (isExpressionEnd(c)) {
-                                    continue;
-                                } else if (isCommentStarter(c)) {
-                                    sCommentOrString = CommentOrString.MayCommentStarter;
-                                    continue;
-                                } else {
-                                    // todo 待验证
-                                    codeSectionType = CodeSectionType.ContentSection;
-                                    // 在后面的 for 循环中，此行重新循环
-                                    penetratePackageAndImportSectionState = 1;
-                                    break;
-                                }
-                            } else if (importState == ImportState.Processing) {
-                                if (isSpace(c)) {
-                                    if (importStrCache.toString().equals("importstatic")) {
-                                        // todo 直接将 static 信息去掉，后续考虑是否还用得到
-                                        importStrCache.setLength(6); // "import".length() == 6
+                            if (isSpace(c)) {
+                                preImportTokenType = TokenType.Space;
+                                continue;
+                            } else if (isDot(c)) {
+                                importStrCache.append(c);
+                                preImportTokenType = TokenType.DotForIdentifier;
+                                preValidImportTokenType = TokenType.DotForIdentifier;
+                                continue;
+                            } else if (isExpressionEnd(c)) {
+                                importStrCache.append(c);
+                                importStrArr.add(importStrCache.toString());
+                                importStrCache.setLength(0);
+                                preImportTokenType = TokenType.None;
+                                preValidImportTokenType = TokenType.None;
+                                continue;
+                            } else if (isLegalIdentifierPostfix(c)) {
+                                if (preImportTokenType == TokenType.Space && preValidImportTokenType == TokenType.Identifier) {
+                                    // 直接进入import
+                                    if ("import".equals(importStrCache.toString())) {
+                                        // 继续解析
+                                        preImportTokenType = TokenType.Identifier;
+                                        preValidImportTokenType = TokenType.Identifier;
+                                        importStrCache.append(c);
+                                    } else {
+                                        // todo 判断 "im" 前缀，说明还是 import
+                                        if (c == 'i' && i < strLength - 1 && s.charAt(i + 1) == 'm') {
+                                            // todo 结束当前的import，进入下一个 import
+                                            // 前一个 import 回收
+                                            importStrArr.add(importStrCache.toString());
+                                            importStrCache.setLength(0);
+
+                                            importStrCache.append(c);
+                                            importState = ImportState.Processing;
+                                            preImportTokenType = TokenType.Identifier;
+                                            preValidImportTokenType = TokenType.Identifier;
+                                        } else {
+                                            importStrArr.add(importStrCache.toString());
+                                            importStrCache.setLength(0);
+                                            codeSectionType = CodeSectionType.ContentSection;
+                                            preImportTokenType = TokenType.None;
+                                            preValidImportTokenType = TokenType.None;
+                                            penetratePackageAndImportSectionState = 1;
+                                        }
                                     }
                                     continue;
-                                } else if (isLegalIdentifierPostfix(c) || isDot(c)) {
+                                } else {
+                                    preImportTokenType = TokenType.Identifier;
+                                    preValidImportTokenType = TokenType.Identifier;
                                     importStrCache.append(c);
-                                    continue;
-                                } else if (isExpressionEnd(c)) {
-                                    importStrCache.append(c);
-                                    importStrArr.add(importStrCache.toString());
-                                    importStrCache.setLength(0);
-                                    // todo 下一行，怎么处理
-                                    // 添加标志位，进入下一行
-                                    // 不对，有可能一行有两个import
-                                    importState = ImportState.None;
-                                    continue;
-                                } else if (isCommentStarter(c)) {
-                                    sCommentOrString = CommentOrString.MayCommentStarter;
                                     continue;
                                 }
+                            } else if (isCommentStarter(c)) {
+                                sCommentOrString = CommentOrString.MayCommentStarter;
+                                continue;
                             }
                         } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
                             if (isCommentStarter(c)) {
@@ -707,11 +766,11 @@ public class JavaTokenParser implements ITokenParser {
     }
 
     private static boolean isLegalIdentifierStarter(char c) {
-        return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_') || (c == '$') || (c == '@');
+        return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_') || (c == '$') || (c == '@') || (c == '`');
     }
 
     private static boolean isLegalIdentifierPostfix(char c) {
-        return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || (c == '_') || (c == '$');
+        return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || (c == '_') || (c == '$') || (c == '`') || (c == '@');
     }
 
     private static boolean isParentheses(char c) {

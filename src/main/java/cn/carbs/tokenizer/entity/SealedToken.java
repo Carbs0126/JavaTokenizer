@@ -13,9 +13,9 @@ public class SealedToken {
     @Override
     public String toString() {
         return "SealedToken{" +
-                "type=" + type +
-                ", literalStr='" + literalStr + '\'' +
-                ", extraInt='" + extraInt + '\'' +
+                "Str='" + literalStr + '\'' +
+                ", type=" + type +
+                ", extra='" + extraInt + '\'' +
                 '}';
     }
 

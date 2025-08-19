@@ -23,7 +23,10 @@ public class cn.carbs.tokenizer.Main {
             while ((line = reader.readLine()) != null) {
                 System.out.println(line);
             }
-            setContentView(R.layout.my_activity);
+            // 有问题
+            setContentView(R.layout
+             .my_activity);
+             "my_fragment_layout"
             int var = my_textview;
             setcontent(cn.carbs.tokenizer.R.layout.some_image_view);
         } catch (Exception e) {

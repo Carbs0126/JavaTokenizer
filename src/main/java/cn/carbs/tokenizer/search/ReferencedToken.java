@@ -1,10 +1,13 @@
 package cn.carbs.tokenizer.search;
 
 import cn.carbs.tokenizer.entity.SealedToken;
+import cn.carbs.tokenizer.type.TokenType;
 
 import java.util.ArrayList;
 
 public class ReferencedToken {
+
+    public TokenType tokenType = TokenType.None;
 
     public IdentifierMatcher identifierMatcher;
 
@@ -20,16 +23,24 @@ public class ReferencedToken {
             tempStringBuilder.append(completeIdentifierToken.get(m).literalStr);
         }
         this.completedTokenStr = tempStringBuilder.toString();
+        this.tokenType = TokenType.Identifier;
     }
 
     public ReferencedToken(IdentifierMatcher identifierMatcher, StringBuilder completeTokenStringBuilder) {
         this.identifierMatcher = identifierMatcher;
         this.completedTokenStr = completeTokenStringBuilder.toString();
+        this.tokenType = TokenType.Identifier;
     }
 
     public ReferencedToken(IdentifierMatcher identifierMatcher, String completeTokenStr) {
         this.identifierMatcher = identifierMatcher;
         this.completedTokenStr = completeTokenStr;
+        this.tokenType = TokenType.Identifier;
+    }
+
+    public ReferencedToken(String str) {
+        this.completedTokenStr = str;
+        this.tokenType = TokenType.String;
     }
 
     public ReferencedToken setStandardSimpleReference(String simpleReferenceStr) {
@@ -40,7 +51,8 @@ public class ReferencedToken {
     @Override
     public String toString() {
         return ">>> ReferencedToken{" +
-                "identifierMatcher=" + identifierMatcher +
+                "tokenType=" + tokenType.name() +
+                ", identifierMatcher=" + identifierMatcher +
                 ", completedTokenStr='" + completedTokenStr + '\'' +
                 ", simpleReferenceStr='" + simpleReferenceStr + '\'' +
                 '}';

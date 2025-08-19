@@ -1,6 +1,6 @@
 package cn.carbs.tokenizer.type;
 
-public enum SectionType {
+public enum CodeSectionType {
     None,
     PackageSection,
     ImportSection,

@@ -1,21 +1,77 @@
 package cn.carbs.tokenizer.util;
 
-import cn.carbs.tokenizer.backup.R;
+import cn.carbs.tokenizer.core.ITokenParser;
+import cn.carbs.tokenizer.core.JavaTokenParser;
+import cn.carbs.tokenizer.core.KotlinTokenParser;
 import cn.carbs.tokenizer.entity.SealedToken;
 import cn.carbs.tokenizer.search.IdentifierMatcher;
 import cn.carbs.tokenizer.search.ReferencedToken;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class Utils {
 
-    public static ArrayList<String> readLines(String fileName) {
+    public static final HashSet<String> sAndroidResourceType = new HashSet<>();
+//    public static final String sAndroidResourceFilePrefixRegex = "^[a-zA-Z][a-zA-Z0-9_]*$";
+    public static final String sAndroidResourceFilePrefixRegex = "^[a-z][a-z0-9_]*$";
+    public static final Pattern sAndroidResourceFilePrefixPattern = Pattern.compile(sAndroidResourceFilePrefixRegex);
+
+    static {
+        sAndroidResourceType.add("drawable");
+        sAndroidResourceType.add("layout");
+        sAndroidResourceType.add("string");
+        sAndroidResourceType.add("id");
+        sAndroidResourceType.add("color");
+        sAndroidResourceType.add("dimen");
+        sAndroidResourceType.add("style");
+        sAndroidResourceType.add("array");
+        sAndroidResourceType.add("anim");
+        sAndroidResourceType.add("animator");
+        sAndroidResourceType.add("mipmap");
+        sAndroidResourceType.add("raw");
+        sAndroidResourceType.add("bool");
+        sAndroidResourceType.add("integer");
+        sAndroidResourceType.add("transition");
+        sAndroidResourceType.add("xml");
+        sAndroidResourceType.add("font");
+    }
+
+    public static ArrayList<String> readLinesForAbsFilePath(String filePath) {
+
+        File file = new File(filePath);
+
+        if (!file.exists()) {
+            Log.e("文件不存在: " + filePath);
+            return null;
+        }
+
+        if (!file.isFile()) {
+            Log.e("指定路径不是文件: " + filePath);
+            return null;
+        }
+
+        ArrayList arrayList = new ArrayList();
+
+        try (InputStreamReader isr = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                arrayList.add(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return arrayList;
+    }
+
+    public static ArrayList<String> readLinesForFileInResourcesFolder(String fileName) {
 
         ArrayList arrayList = new ArrayList();
 
@@ -143,6 +199,212 @@ public class Utils {
             }
         }
         return null;
+    }
+
+    // todo 暂时没想好怎么写这个方法
+    public static boolean isAbsFilePathMatchResourcePattern(String str, HashSet<String> excludeMap, Pattern includePattern) {
+        str = trimStringIfWithQuotation(str);
+        if (str == null) {
+            return false;
+        }
+        if (excludeMap != null && excludeMap.contains(str)) {
+            return false;
+        }
+        if (includePattern == null) {
+            return true;
+        }
+        return includePattern.matcher(str).matches();
+    }
+
+    static boolean sCheckStringInCode = false;
+    // todo 需要添加灵活配置的选项，是否打开，是否
+    public static boolean isStringMatchResourcePattern(String str, HashSet<String> excludeMap, Pattern includePattern) {
+        if (!sCheckStringInCode) {
+            return false;
+        }
+        str = trimStringIfWithQuotation(str);
+        if (str == null) {
+            return false;
+        }
+        if (excludeMap != null && excludeMap.contains(str)) {
+            return false;
+        }
+        if (includePattern == null) {
+            return true;
+        }
+        return includePattern.matcher(str).matches();
+    }
+
+    public static boolean isStringMatchAndroidResourcePattern(String str) {
+        return isStringMatchResourcePattern(str, sAndroidResourceType, sAndroidResourceFilePrefixPattern);
+    }
+
+    public static String trimStringIfWithQuotation(String str) {
+        if (str == null || str.length() < 2) {
+            return str;
+        }
+        if (str.charAt(0) == '"' && str.charAt(str.length() - 1) == '"') {
+            return str.substring(1, str.length() - 1);
+        }
+        if (str.charAt(0) == '\'' && str.charAt(str.length() - 1) == '\'') {
+            return str.substring(1, str.length() - 1);
+        }
+        return str;
+    }
+
+    public static ITokenParser genCodeTokenParserByFileName(String fileName) {
+        if (fileName == null) {
+            throw new RuntimeException("genTokenParserByFileName failed, fileName is " + fileName);
+        }
+        if (fileName.endsWith(".java")) {
+            return new JavaTokenParser(fileName);
+        }
+        if (fileName.endsWith(".kt")) {
+            return new KotlinTokenParser(fileName);
+        }
+        throw new RuntimeException("genTokenParserByFileName failed, fileName is " + fileName);
+    }
+
+    public static ArrayList<File> findCertainFormatFiles(File directory, ArrayList<String> postfixArrWithoutDot) {
+        ArrayList<File> retFiles = new ArrayList<>();
+
+        // 检查目录是否存在且是一个有效的文件夹
+        if (!directory.exists() || !directory.isDirectory()) {
+//            System.out.println("无效的文件夹路径：" + directory.getAbsolutePath());
+            Log.e("无效的文件夹路径：" + directory.getAbsolutePath());
+            return retFiles;
+        }
+
+        // 获取目录下的所有文件和子目录
+        File[] files = directory.listFiles();
+        if (files == null) { // 处理权限问题导致的无法访问
+            return retFiles;
+        }
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+                // 如果是子目录，递归查找
+                retFiles.addAll(findCertainFormatFiles(file, postfixArrWithoutDot));
+            } else {
+                // 如果是文件，检查是否为Java文件
+                if (isCertainFormatFile(file, postfixArrWithoutDot)) {
+                    retFiles.add(file);
+                }
+            }
+        }
+
+        return retFiles;
+    }
+
+    public static ArrayList<File> findCertainFormatFiles(File directory, String postfixWithoutDot) {
+        ArrayList<File> retFiles = new ArrayList<>();
+
+        // 检查目录是否存在且是一个有效的文件夹
+        if (!directory.exists() || !directory.isDirectory()) {
+//            System.out.println("无效的文件夹路径：" + directory.getAbsolutePath());
+            Log.e("无效的文件夹路径：" + directory.getAbsolutePath());
+            return retFiles;
+        }
+
+        // 获取目录下的所有文件和子目录
+        File[] files = directory.listFiles();
+        if (files == null) { // 处理权限问题导致的无法访问
+            return retFiles;
+        }
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+                // 如果是子目录，递归查找
+                retFiles.addAll(findCertainFormatFiles(file, postfixWithoutDot));
+            } else {
+                // 如果是文件，检查是否为Java文件
+                if (isCertainFormatFile(file, postfixWithoutDot)) {
+                    retFiles.add(file);
+                }
+            }
+        }
+        return retFiles;
+    }
+
+    // 只检查下一层
+    public static ArrayList<File> findFilesInCertainPrefixDir(File directory, ArrayList<String> prefixDirArr) {
+        ArrayList<File> retFiles = new ArrayList<>();
+
+        // 检查目录是否存在且是一个有效的文件夹
+        if (!directory.exists() || !directory.isDirectory()) {
+//            System.out.println("无效的文件夹路径：" + directory.getAbsolutePath());
+            Log.e("无效的文件夹路径：" + directory.getAbsolutePath());
+            return retFiles;
+        }
+
+        // 获取目录下的所有文件和子目录
+        File[] files = directory.listFiles();
+        if (files == null) { // 处理权限问题导致的无法访问
+            return retFiles;
+        }
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+
+                if (prefixDirArr == null || prefixDirArr.size() == 0) {
+                    // 如果是子目录，递归查找
+                    retFiles.addAll(findFilesInCertainPrefixDir(file, prefixDirArr));
+                } else {
+                    for (String prefix : prefixDirArr) {
+                        if (file.getName().startsWith(prefix)) {
+                            retFiles.addAll(findFilesInCertainPrefixDir(file, prefixDirArr));
+                        }
+                    }
+                }
+            } else {
+                // 如果是文件，检查是否为Java文件
+                if (isNormalFile(file)) {
+                    retFiles.add(file);
+                }
+            }
+        }
+        return retFiles;
+    }
+
+
+    private static boolean isCertainFormatFile(File file, ArrayList<String> postfixArr) {
+        String fileName = file.getName();
+//        System.out.println("===========> isCertainFormatFile fileName : " + fileName);
+        // 检查文件名是否以.java结尾，且不是隐藏文件（macOS下以.开头的文件）
+        if (fileName.startsWith(".")) {
+            return false;
+        }
+        if (postfixArr == null) {
+            return true;
+        }
+        for (String postfix : postfixArr) {
+            if (fileName.endsWith("." + postfix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isCertainFormatFile(File file, String postfix) {
+        String fileName = file.getName();
+        if (fileName.startsWith(".")) {
+            return false;
+        }
+        if (postfix == null || postfix.length() == 0) {
+            return true;
+        }
+        // 检查文件名是否以.java结尾，且不是隐藏文件（macOS下以.开头的文件）
+        return fileName.endsWith("." + postfix);
+    }
+
+    private static boolean isNormalFile(File file) {
+        if (file == null) {
+            return false;
+        }
+        if (file.getName().startsWith(".")) {
+            return false;
+        }
+        return true;
     }
 
 }

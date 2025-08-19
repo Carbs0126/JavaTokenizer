@@ -43,7 +43,6 @@ import java.util.Optional;
 import java.util.Spliterator;
 import java.util.StringJoiner;
 import java.util.function.Function;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -52,8 +51,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
-
-import static java.util.function.Predicate.not;
 
 /**
  * The {@code String} class represents character strings. All

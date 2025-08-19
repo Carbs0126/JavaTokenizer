@@ -7,6 +7,7 @@ public class R {
 
     public static class id {
         public static final int my_button = 1;
+//        public String `var` = "";
     }
 
     public static void main(String[] args) {

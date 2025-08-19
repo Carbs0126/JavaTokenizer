@@ -18,5 +18,6 @@ public enum TokenType {
     Comma,
     Colon,
     End,
-    NotExistTokenNewLine
+    NotExistTokenNewLine,
+    Space
 }

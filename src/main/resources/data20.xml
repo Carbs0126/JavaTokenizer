@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:orientation="vertical">
+
+    <!--
+
+
+
+
+    \-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="match_parent"/>-->
+
+    <
+            LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    <LinearLayout
+            android:id="@+id/content_error_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:orientation="vertical">
+
+        <ImageView
+                android:id="@+id/empty_icon"
+                android:layout_width="78.3dp"
+                android:layout_height="78.3dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/bdreader_no_wifi_day"
+                tools:ignore="ContentDescription"/>
+
+        <TextView
+                android:id="@+id/detail_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:gravity="center_horizontal"
+                android:lineSpacingExtra="4dp"
+                android:text="@string/bdreader_emptyview_retry_text"
+                android:textColor="#666666"
+                android:textSize="14dp"
+                tools:text="因部分内容不符合国家法律法规要求，\n 本章节内容暂时无法阅读; \n 小编正在努力修复，请耐心等待。"
+                tools:ignore="SpUsage"/>
+
+        <TextView
+                android:id="@+id/empty_btn_reload"
+                android:layout_width="97dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bdreader_retry_button_background"
+                android:focusable="true"
+                android:clickable="true"
+                android:gravity="center"
+                android:text="@string/bdreader_emptyview_reload"
+                android:textColor="#666666"
+                android:textSize="14dp"
+                tools:ignore="SpUsage"/>
+    </LinearLayout>
+
+    <include
+            android:id="@+id/content_loading_view"
+            layout="@layout/bdreader_loading_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:visibility="gone"/>
+
+</RelativeLayout>
