@@ -1,14 +1,18 @@
 package cn.carbs.tokenizer.util;
 
+import cn.carbs.tokenizer.capsule.StringOrArrayList;
 import cn.carbs.tokenizer.core.ITokenParser;
 import cn.carbs.tokenizer.core.JavaTokenParser;
 import cn.carbs.tokenizer.core.KotlinTokenParser;
 import cn.carbs.tokenizer.entity.SealedToken;
 import cn.carbs.tokenizer.search.IdentifierMatcher;
 import cn.carbs.tokenizer.search.ReferencedToken;
+import cn.carbs.tokenizer.xml.XMLParser;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,7 +22,7 @@ import java.util.regex.Pattern;
 public class Utils {
 
     public static final HashSet<String> sAndroidResourceType = new HashSet<>();
-//    public static final String sAndroidResourceFilePrefixRegex = "^[a-zA-Z][a-zA-Z0-9_]*$";
+    //    public static final String sAndroidResourceFilePrefixRegex = "^[a-zA-Z][a-zA-Z0-9_]*$";
     public static final String sAndroidResourceFilePrefixRegex = "^[a-z][a-z0-9_]*$";
     public static final Pattern sAndroidResourceFilePrefixPattern = Pattern.compile(sAndroidResourceFilePrefixRegex);
 
@@ -217,6 +221,7 @@ public class Utils {
     }
 
     static boolean sCheckStringInCode = false;
+
     // todo 需要添加灵活配置的选项，是否打开，是否
     public static boolean isStringMatchResourcePattern(String str, HashSet<String> excludeMap, Pattern includePattern) {
         if (!sCheckStringInCode) {
@@ -405,6 +410,242 @@ public class Utils {
             return false;
         }
         return true;
+    }
+
+    public static String getLastFolderName(File file) {
+        if (file == null) {
+            return null;
+        }
+
+        // 获取文件的父目录
+        File parentFile = file.getParentFile();
+
+        // 如果父目录存在，返回其名称；否则返回null
+        return parentFile != null ? parentFile.getName() : null;
+    }
+
+    /**
+     * 获取文件名中第一个点(.)前面的部分
+     *
+     * @param file 文件对象
+     * @return 第一个点前面的字符串，如果没有点则返回完整文件名
+     */
+    public static String getFileNameBeforeFirstDot(File file) {
+        if (file == null) {
+            return null;
+        }
+
+        // 获取文件名（不包含路径）
+        String fileName = file.getName();
+
+        // 查找第一个点的位置
+        int dotIndex = fileName.indexOf('.');
+
+        // 如果存在点，返回点前面的部分；否则返回完整文件名
+        if (dotIndex != -1) {
+            return fileName.substring(0, dotIndex);
+        } else {
+            return fileName;
+        }
+    }
+
+    /**
+     * 计算文件的MD5值
+     *
+     * @param file 要计算MD5的文件对象
+     * @return 文件的MD5值，若发生错误则返回null
+     */
+    public static String getFileMD5(File file) {
+        if (file == null || !file.exists() || !file.isFile()) {
+            return null;
+        }
+
+        MessageDigest md5 = null;
+        FileInputStream fis = null;
+
+        try {
+            md5 = MessageDigest.getInstance("MD5");
+            fis = new FileInputStream(file);
+
+            byte[] buffer = new byte[8192];
+            int length;
+
+            // 读取文件内容并更新MD5摘要
+            while ((length = fis.read(buffer)) != -1) {
+                md5.update(buffer, 0, length);
+            }
+
+            // 将MD5摘要转换为十六进制字符串
+            byte[] bytes = md5.digest();
+            StringBuilder sb = new StringBuilder();
+            for (byte b : bytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    sb.append('0');
+                }
+                sb.append(hex);
+            }
+            return sb.toString();
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            // 关闭文件输入流
+            if (fis != null) {
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 将 xml 中的  @drawable/xxx  转为 R.drawable.xxx
+     * OK
+     *
+     * @param refInXml
+     * @return
+     */
+    public static String transformRefInXmlToResourceId(String refInXml) {
+        if (refInXml == null) {
+            return null;
+        }
+        if (refInXml.charAt(0) != '@') {
+            return null;
+        }
+        int indexOfSlash = refInXml.indexOf('/');
+        if (indexOfSlash > 0 && indexOfSlash < refInXml.length() - 1) {
+            return "R." + refInXml.substring(1, indexOfSlash) + "." + refInXml.substring(indexOfSlash + 1);
+        }
+        return null;
+    }
+
+    // TODO 怎么结束呢？
+    public static void startColor(HashMap<String, StringOrArrayList> mapResourceToFiles) {
+        if (mapResourceToFiles == null) {
+            return;
+        }
+        for (Map.Entry<String, StringOrArrayList> entry : mapResourceToFiles.entrySet()) {
+            StringOrArrayList value = entry.getValue();
+            if (value.getState() == 1) {
+                // id 已经被染色了，说明这个 id 和对应的文件会被用到
+                // 从这个已经被染色的 id 出发，只分析 layout xml 和 drawable xml
+                String resourceIDStr = entry.getKey();
+                // drawable 有可能是一张图片，也有可能是 xml，要区别对待
+                if (resourceIDStr.startsWith("R.layout.") || resourceIDStr.startsWith("R.drawable.")) {
+                    // 收集对应的xml文件中的 string，并辨别是否为 @drawable 或者 @layout
+                    ArrayList<String> concernedXMLIDs = analyseStringOrArrayListObjAndExtractConcernedIDS(value);
+                    traversColor(mapResourceToFiles, concernedXMLIDs);
+                }
+            }
+        }
+    }
+
+    // 把 concernedXMLIDs 对应的 给 color
+    public static void traversColor(HashMap<String, StringOrArrayList> mapResourceToFiles, ArrayList<String> concernedXMLIDs) {
+        if (concernedXMLIDs == null || concernedXMLIDs.size() == 0) {
+            return;
+        }
+        if (mapResourceToFiles == null || mapResourceToFiles.size() == 0) {
+            return;
+        }
+        for (String resourceID : concernedXMLIDs) {
+            if (resourceID == null) {
+                continue;
+            }
+            if (!mapResourceToFiles.containsKey(resourceID)) {
+                continue;
+            }
+            StringOrArrayList value = mapResourceToFiles.get(resourceID);
+            if (value == null) {
+                mapResourceToFiles.remove(resourceID);
+                continue;
+            }
+            if (value.getState() == 1) {
+                // 已经染色，跳过
+                continue;
+            }
+            // 1. 染色，下次不再进入这个 xml 了
+            value.setState(1);
+            // 2. 只分析 R.layout.xxx xml  和  R.drawable.xxx xml 中的内容
+            if (resourceID.startsWith("R.layout.") || resourceID.startsWith("R.drawable.")) {
+                ArrayList<String> nextRoundConcernedXMLIDs = analyseStringOrArrayListObjAndExtractConcernedIDS(value);
+                traversColor(mapResourceToFiles, nextRoundConcernedXMLIDs);
+            }
+        }
+    }
+
+    private static ArrayList<String> analyseStringOrArrayListObjAndExtractConcernedIDS(StringOrArrayList stringOrArrayList) {
+        if (stringOrArrayList == null) {
+            return null;
+        }
+        ArrayList<String> concernedXMLIDs = null;
+        if (stringOrArrayList.isArray()) {
+            ArrayList<String> arr = stringOrArrayList.getArr();
+            if (arr != null && arr.size() > 0) {
+                concernedXMLIDs = new ArrayList<>(arr.size() * 16);
+                for (String filePath : arr) {
+                    if (filePath != null && filePath.endsWith(".xml")) {
+                        ArrayList<String> concernedXMLIDsForOneFile = pickConcernedXMLIDs(filePath);
+                        if (concernedXMLIDsForOneFile != null) {
+                            concernedXMLIDs.addAll(concernedXMLIDsForOneFile);
+                        }
+                    }
+                }
+            }
+        } else {
+            String str = stringOrArrayList.getStr();
+            concernedXMLIDs = pickConcernedXMLIDs(str);
+        }
+        return concernedXMLIDs;
+    }
+
+    private static ArrayList<String> analyseXMLStrings(String absFilePath) {
+        if (absFilePath == null || !absFilePath.endsWith(".xml")) {
+            return null;
+        }
+        ArrayList<String> arrayList = Utils.readLinesForAbsFilePath(absFilePath);
+        XMLParser xmlParser = new XMLParser();
+        ArrayList<String> arr = xmlParser.getResourceRefs(arrayList);
+//        System.out.println("testXML() file name : " + fileName);
+//        for (String s : arr) {
+//            System.out.println(s);
+//        }
+        return arr;
+    }
+
+    /**
+     * 如果xml中存在 @drawable/xxx 或者 @layout/xxx
+     * 则返回 R.drawable.xxx R.layout.xxx
+     *
+     * @param absFilePath
+     * @return
+     */
+    public static ArrayList<String> pickConcernedXMLIDs(String absFilePath) {
+        ArrayList<String> stringsInXml = analyseXMLStrings(absFilePath);
+        if (stringsInXml == null || stringsInXml.size() == 0) {
+            return null;
+        } else {
+            ArrayList<String> concernedXMLStrings = new ArrayList<>(16);
+            for (String strInXml : stringsInXml) {
+//                System.out.println("strInXml ---> " + strInXml);
+                if (strInXml != null
+                        && (strInXml.startsWith("@layout") || strInXml.startsWith("@drawable"))) {
+                    String transformedStr = transformRefInXmlToResourceId(strInXml);
+                    if (transformedStr == null) {
+                        continue;
+                    }
+                    concernedXMLStrings.add(transformedStr);
+                }
+            }
+            return concernedXMLStrings;
+        }
     }
 
 }

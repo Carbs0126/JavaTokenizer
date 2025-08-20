@@ -186,7 +186,7 @@ public class JavaTokenParser implements ITokenParser {
                                         importStrCache.setLength(6); // "import".length() == 6
                                     }
                                     continue;
-                                } else if (isLegalIdentifierPostfix(c) || isDot(c)) {
+                                } else if (isLegalIdentifierPostfix(c) || isDot(c) || isStar(c)) {
                                     importStrCache.append(c);
                                     continue;
                                 } else if (isExpressionEnd(c)) {

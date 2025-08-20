@@ -43,6 +43,10 @@ public class IdentifierMatcher {
         this.wholePath = wholePath;
     }
 
+    public IdentifierMatcher() {
+
+    }
+
     public IdentifierMatcher setStandardImport(String standardImport) {
         this.standardImport = standardImport;
         return this;

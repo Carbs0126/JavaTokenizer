@@ -33,7 +33,7 @@ public class WorkFlowOfCode {
      * @param rootFolderAbsPath
      * @param resourceRFilePaths
      */
-    private static ArrayList<CodeFileAndReferencedToken> traverseFolderAndAnalyseJavaAndKotlinCode(String rootFolderAbsPath, ArrayList<String> resourceRFilePaths) {
+    public static ArrayList<CodeFileAndReferencedToken> traverseFolderAndAnalyseJavaAndKotlinCode(String rootFolderAbsPath, ArrayList<String> resourceRFilePaths) {
         ArrayList<String> postfixArr = new ArrayList<>();
         ArrayList<CodeFileAndReferencedToken> retArr = new ArrayList<>();
         postfixArr.add("java");
@@ -51,6 +51,7 @@ public class WorkFlowOfCode {
             // todo wang 接收一下
 //            searchTokensForResourceId(file.getAbsolutePath(), resourceRFilePaths);
             ArrayList<ReferencedToken> referencedTokens = analyseReferencedResourceForFilePaths(file.getAbsolutePath(), resourceRFilePaths);
+
             if (referencedTokens != null && referencedTokens.size() > 0) {
 //                hasRefCount++;
 //                for (ReferencedToken referencedToken : referencedTokens) {
@@ -85,7 +86,7 @@ public class WorkFlowOfCode {
 //        System.out.println("Code analysis finished!");
 //    }
 
-    private static ArrayList<ReferencedToken> analyseReferencedResourceForFilePaths(String fileName, ArrayList<String> resourceRFileImportPaths) {
+    public static ArrayList<ReferencedToken> analyseReferencedResourceForFilePaths(String fileName, ArrayList<String> resourceRFileImportPaths) {
 //        ArrayList<String> arrayList = Utils.readLinesForFileInResourcesFolder(fileName);
         ArrayList<String> arrayList = Utils.readLinesForAbsFilePath(fileName);
         ArrayList<SealedToken> tokens = Utils.genCodeTokenParserByFileName(fileName).getTokens(arrayList);
@@ -190,6 +191,13 @@ public class WorkFlowOfCode {
                                     referencedTokens.add(referencedToken);
                                     break;
                                 }
+                            }
+                            // 没有命中 比如 R.layout.xxxxxxx_xxxxxxxxxx
+                            // 小于全路径
+                            ReferencedToken referencedToken = Utils.checkTokenMatched(identifierMatcherMap, completeIdentifierToken, completeToken);
+                            if (referencedToken != null) {
+//                                System.out.println("[MAYBE] ReferencedToken 4 --> " + referencedToken);
+                                referencedTokens.add(referencedToken);
                             }
                         } else {
                             // 小于全路径

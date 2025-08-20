@@ -48,6 +48,11 @@ public class ReferencedToken {
         return this;
     }
 
+    public ReferencedToken setIdentifierMatcher(IdentifierMatcher identifierMatcher) {
+        this.identifierMatcher = identifierMatcher;
+        return this;
+    }
+
     @Override
     public String toString() {
         return ">>> ReferencedToken{" +
@@ -56,5 +61,27 @@ public class ReferencedToken {
                 ", completedTokenStr='" + completedTokenStr + '\'' +
                 ", simpleReferenceStr='" + simpleReferenceStr + '\'' +
                 '}';
+    }
+
+    @Override
+    public int hashCode() {
+        if (identifierMatcher != null && identifierMatcher.standardImport != null && simpleReferenceStr != null) {
+            return identifierMatcher.standardImport.hashCode() + simpleReferenceStr.hashCode();
+        } else if (completedTokenStr != null) {
+            return completedTokenStr.hashCode();
+        }
+        return super.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof ReferencedToken)) {
+            return false;
+        }
+        ReferencedToken other = (ReferencedToken) obj;
+        return this.hashCode() == other.hashCode();
     }
 }

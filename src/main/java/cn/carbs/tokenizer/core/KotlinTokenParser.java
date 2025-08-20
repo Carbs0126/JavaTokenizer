@@ -215,7 +215,7 @@ public class KotlinTokenParser implements ITokenParser {
                                 preImportTokenType = TokenType.DotForIdentifier;
                                 preValidImportTokenType = TokenType.DotForIdentifier;
                                 continue;
-                            } else if (isExpressionEnd(c)) {
+                            } else if (isExpressionEnd(c) || isStar(c)) {
                                 importStrCache.append(c);
                                 importStrArr.add(importStrCache.toString());
                                 importStrCache.setLength(0);
@@ -261,6 +261,8 @@ public class KotlinTokenParser implements ITokenParser {
                             } else if (isCommentStarter(c)) {
                                 sCommentOrString = CommentOrString.MayCommentStarter;
                                 continue;
+                            } else {
+                                Log.d("package or import 3", " current char : " + c, this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
                             if (isCommentStarter(c)) {
@@ -270,7 +272,7 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.d("package or import 3", " current char : " + c, this.absFileName);
+                                Log.d("package or import 4", " current char : " + c, this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
