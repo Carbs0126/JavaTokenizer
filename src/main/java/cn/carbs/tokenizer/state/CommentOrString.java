@@ -9,4 +9,9 @@ public enum CommentOrString {
     InBlockComment,         //  即 /*
     MayEndBlockComment,     //  即 *
     InString,               //  即 "
+    InBlockString,               //  即 """  """
+    MayStringStarter0,      //  即 """ 中的第一个
+    MayStringStarter1,      //  即 """ 中的第二个
+    MayStringEnd0,          //  即 """ 中的第一个
+    MayStringEnd1,          //  即 """ 中的第二个
 }

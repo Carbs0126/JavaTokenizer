@@ -23,9 +23,10 @@ public class Main {
 
 //        Test.analyseJavaAndKotlinFiles("/Users/v_wangjianjun02/Library/Android/sdk/sources/android-34");
 //        Test.analyseJavaAndKotlinFiles("/Users/v_wangjianjun02/Desktop/jdk/jdk");
+        Test.analyseJavaAndKotlinFiles("/Users/wangchao/Downloads/jdk-master");
 
-
-        Test.analyseOneJavaOrKotlinFile("/Users/v_wangjianjun02/Desktop/jdk/jdk/test/jdk/java/awt/PrintJob/PrintComponentTest.java", true);
+//        Test.analyseOneJavaOrKotlinFile("/Users/wangchao/Downloads/jdk-master/src/jdk.javadoc/share/classes/jdk/javadoc/internal/doclets/toolkit/util/CommentHelper.java", true);
+//        Test.analyseOneJavaOrKotlinFile("/Users/wangchao/Downloads/jdk-master/test/jdk/java/awt/PrintJob/PrintComponentTest.java", true);
 
     }
 

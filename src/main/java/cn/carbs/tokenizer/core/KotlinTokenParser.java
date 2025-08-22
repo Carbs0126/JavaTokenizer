@@ -103,7 +103,8 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.e("package or import 0", " current char : " + c, this.absFileName);
+                                Log.e("package or import 0", " current char : ->"
+                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
@@ -179,12 +180,14 @@ public class KotlinTokenParser implements ITokenParser {
                         } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
                             if (isCommentStarter(c)) {
                                 // package 中应该没有行注释
-                                Log.e("package or import 1", " current char : " + c, this.absFileName);
+                                Log.e("package or import 1", " current char : ->"
+                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             } else if (c == '*') {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.e("package or import 2", " current char : " + c, this.absFileName);
+                                Log.e("package or import 2", " current char : ->"
+                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InBlockComment) {
                             if (c == '*') {
@@ -262,7 +265,8 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.MayCommentStarter;
                                 continue;
                             } else {
-                                Log.e("package or import 3", " current char : " + c, this.absFileName);
+                                Log.e("package or import 3", " current char : ->"
+                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
                             if (isCommentStarter(c)) {
@@ -272,7 +276,8 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.e("package or import 4", " current char : " + c, this.absFileName);
+                                Log.e("package or import 4", " current char : ->"
+                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
@@ -389,7 +394,9 @@ public class KotlinTokenParser implements ITokenParser {
                             continue;
                         } else {
                             Log.e("CommentOrString.None & TokenType.None",
-                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
+                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Identifier) {
@@ -453,9 +460,17 @@ public class KotlinTokenParser implements ITokenParser {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
+                        } else if (isCharSymbol(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Char;
+                            sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
                         } else {
                             Log.e("CommentOrString.None & TokenType.Identifier",
-                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
+                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Number) {
@@ -514,7 +529,9 @@ public class KotlinTokenParser implements ITokenParser {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                         } else {
                             Log.e("CommentOrString.None & TokenType.Number",
-                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
+                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Char) {
@@ -616,13 +633,17 @@ public class KotlinTokenParser implements ITokenParser {
                             continue;
                         } else {
                             Log.e("CommentOrString.None & TokenType.DotConfirmLater",
-                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
+                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
                         }
                     } else {
                         // curToken.type == TokenType.Operator 这种情况不存在，因为 每次遇到 operator 都会回收并重置
                         Log.e("CommentOrString.None & TokenType else",
-                                "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
+                                "line : " + (lineIndex + 1) + ", columnIndex : " + i
+                                        + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                        + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                         continue;
                     }
                 } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
@@ -687,7 +708,9 @@ public class KotlinTokenParser implements ITokenParser {
                             continue;
                         } else {
                             Log.e("CommentOrString.MayCommentStarter & current c else",
-                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
+                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
                         }
                     }

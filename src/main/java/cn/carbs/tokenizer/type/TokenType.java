@@ -8,6 +8,7 @@ public enum TokenType {
     Parentheses,
     Number,
     String,
+    StringBlock,        // """
     DotForIdentifier,    // 用于 identifier 合成
     DotConfirmLater,
     Char,

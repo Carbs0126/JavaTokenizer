@@ -133,12 +133,14 @@ public class JavaTokenParser implements ITokenParser {
                         } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
                             if (isCommentStarter(c)) {
                                 // package 中应该没有行注释
-                                Log.e("package or import 1", " current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                Log.e("package or import 1", " current char : ->"
+                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             } else if (c == '*') {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.e("package or import 2", " current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                Log.e("package or import 2", " current char : ->"
+                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InBlockComment) {
                             if (c == '*') {
@@ -212,7 +214,8 @@ public class JavaTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.e("package or import 3", " current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                Log.e("package or import 3", " current char : ->"
+                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
@@ -275,7 +278,8 @@ public class JavaTokenParser implements ITokenParser {
                             sCommentOrString = CommentOrString.MayCommentStarter;
                             continue;
                         } else if (isStringSymbol(c)) {
-                            sCommentOrString = CommentOrString.InString;
+//                            sCommentOrString = CommentOrString.InString;
+                            sCommentOrString = CommentOrString.MayStringStarter0;
                             sCurrentToken.type = TokenType.String;
                             sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
@@ -330,7 +334,8 @@ public class JavaTokenParser implements ITokenParser {
                         } else {
                             Log.e("CommentOrString.None & TokenType.None",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Identifier) {
@@ -341,7 +346,8 @@ public class JavaTokenParser implements ITokenParser {
                         } else if (isStringSymbol(c)) {
                             // todo 不可能，输出log
                             collectTokenAndResetCache(tokens, sCurrentToken);
-                            sCommentOrString = CommentOrString.InString;
+//                            sCommentOrString = CommentOrString.InString;
+                            sCommentOrString = CommentOrString.MayStringStarter0;
                             sCurrentToken.type = TokenType.String;
                             sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
@@ -394,10 +400,17 @@ public class JavaTokenParser implements ITokenParser {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
+                        } else if (isCharSymbol(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Char;
+                            sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
                         } else {
                             Log.e("CommentOrString.None & TokenType.Identifier",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Number) {
@@ -408,7 +421,8 @@ public class JavaTokenParser implements ITokenParser {
                         } else if (isStringSymbol(c)) {
                             // todo 不可能，输出log
                             collectTokenAndResetCache(tokens, sCurrentToken);
-                            sCommentOrString = CommentOrString.InString;
+//                            sCommentOrString = CommentOrString.InString;
+                            sCommentOrString = CommentOrString.MayStringStarter0;
                             sCurrentToken.type = TokenType.String;
                             sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
@@ -457,7 +471,8 @@ public class JavaTokenParser implements ITokenParser {
                         } else {
                             Log.e("CommentOrString.None & TokenType.Number",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Char) {
@@ -560,14 +575,16 @@ public class JavaTokenParser implements ITokenParser {
                         } else {
                             Log.e("CommentOrString.None & TokenType.DotConfirmLater",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
                         }
                     } else {
                         // curToken.type == TokenType.Operator 这种情况不存在，因为 每次遇到 operator 都会回收并重置
-                        Log.e("CommentOrString.None & TokenType else",
+                        Log.e("CommentOrString.None & TokenType." + sCurrentToken.type.name(),
                                 "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                        + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                        + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                        + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                         continue;
                     }
                 } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
@@ -592,7 +609,8 @@ public class JavaTokenParser implements ITokenParser {
                             continue;
                         } else if (isStringSymbol(c)) {
                             // todo 不可能，输出log
-                            sCommentOrString = CommentOrString.InString;
+//                            sCommentOrString = CommentOrString.InString;
+                            sCommentOrString = CommentOrString.MayStringStarter0;
                             sCurrentToken.type = TokenType.String;
                             sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
@@ -633,7 +651,8 @@ public class JavaTokenParser implements ITokenParser {
                         } else {
                             Log.e("CommentOrString.MayCommentStarter & current c else",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
                         }
                     }
@@ -652,6 +671,37 @@ public class JavaTokenParser implements ITokenParser {
                         sCommentOrString = CommentOrString.InBlockComment;
                     }
                     continue;
+                } else if (sCommentOrString == CommentOrString.MayStringStarter0) {
+                    if (isStringSymbol(c)) {
+                        sCommentOrString = CommentOrString.MayStringStarter1;
+                    } else {
+                        sCommentOrString = CommentOrString.InString;
+                        if (isEscape(c)) {
+                            // 当前字符为 /
+                            sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_READY;
+                        } else {
+                            sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                        }
+                    }
+                    // 字符串继续
+                    sCurrentToken.appendLiteralChar(c);
+                    continue;
+                } else if (sCommentOrString == CommentOrString.MayStringStarter1) {
+                    if (isStringSymbol(c)) {
+                        // 连着三个 """
+                        sCommentOrString = CommentOrString.InBlockString;
+                        // 字符串继续
+                        sCurrentToken.appendLiteralChar(c);
+                    } else {
+                        // 上一个 空 string 结束了 ""
+                        sCommentOrString = CommentOrString.None;
+                        // 上一个是普通 string
+                        sCurrentToken.type = TokenType.String;
+                        collectTokenAndResetCache(tokens, sCurrentToken);
+                        // 把当前的字符收进去
+                        sCurrentToken.appendLiteralChar(c);
+                    }
+                    continue;
                 } else if (sCommentOrString == CommentOrString.InString) {
                     if (sCurrentToken.extraInt == TokenCache.IN_STRING_MODE_ESCAPE_IDLE) {
                         // 前一个字符不是 escape 转义字符
@@ -661,17 +711,6 @@ public class JavaTokenParser implements ITokenParser {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
-//                            // 检查前一个字符是否为转义符
-//                            if (sCurrentToken.literalStrLength() > 0 && isEscape(sCurrentToken.getLastChar())) {
-//                                // 前一个字符为转义字符，当前 " 字符仍然在 字符串内
-//                                sCurrentToken.appendLiteralChar(c);
-//                            } else {
-//                                // 结束当前字符串
-//                                sCommentOrString = CommentOrString.None;
-//                                sCurrentToken.appendLiteralChar(c);
-//                                collectTokenAndResetCache(tokens, sCurrentToken);
-//                            }
-//                            continue;
                         } else {
                             // 当前字符不为 "
                             if (isEscape(c)) {
@@ -691,6 +730,62 @@ public class JavaTokenParser implements ITokenParser {
                         // 2. 取消转义模式
                         sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
                         // 3. 并继续string模式
+                        continue;
+                    }
+                } else if (sCommentOrString == CommentOrString.InBlockString) {
+                    // 位于 """ """ 之间
+                    if (sCurrentToken.extraInt == TokenCache.IN_STRING_MODE_ESCAPE_IDLE) {
+                        // 前一个字符不是 escape 转义字符
+                        if (isStringSymbol(c)) {
+                            // todo wang
+                            // 如果当前字符为 "
+                            sCommentOrString = CommentOrString.MayStringEnd0;
+                            sCurrentToken.appendLiteralChar(c);
+//                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else {
+                            // 当前字符不为 "
+                            if (isEscape(c)) {
+                                // 当前字符为 /
+                                sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_READY;
+                            } else {
+                                sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                            }
+                            // 字符串继续
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        }
+                    } else {
+                        // 前一个字符是 escape 转义字符：
+                        // 1. 把当前字符加入到string中
+                        sCurrentToken.appendLiteralChar(c);
+                        // 2. 取消转义模式
+                        sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                        // 3. 并继续string模式
+                        continue;
+                    }
+                } else if (sCommentOrString == CommentOrString.MayStringEnd0) {
+                    if (isStringSymbol(c)) {
+                        sCommentOrString = CommentOrString.MayStringEnd1;
+                        sCurrentToken.appendLiteralChar(c);
+                        continue;
+                    } else {
+                        // 回退到 InBlockString
+                        sCommentOrString = CommentOrString.InBlockString;
+                        sCurrentToken.appendLiteralChar(c);
+                        continue;
+                    }
+                } else if (sCommentOrString == CommentOrString.MayStringEnd1) {
+                    if (isStringSymbol(c)) {
+                        sCommentOrString = CommentOrString.None;
+                        sCurrentToken.type = TokenType.StringBlock;
+                        sCurrentToken.appendLiteralChar(c);
+                        collectTokenAndResetCache(tokens, sCurrentToken);
+                        continue;
+                    } else {
+                        // 回退到 InBlockString
+                        sCommentOrString = CommentOrString.InBlockString;
+                        sCurrentToken.appendLiteralChar(c);
                         continue;
                     }
                 }
