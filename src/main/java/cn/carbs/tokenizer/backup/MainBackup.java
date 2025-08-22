@@ -7,8 +7,8 @@ package cn.carbs.tokenizer.backup;
 
 import cn.carbs.tokenizer.WorkFlowOfCode;
 import cn.carbs.tokenizer.entity.SealedToken;
-import cn.carbs.tokenizer.search.IdentifierMatcher;
-import cn.carbs.tokenizer.search.ReferencedToken;
+import cn.carbs.tokenizer.reference.IdentifierMatcher;
+import cn.carbs.tokenizer.reference.ReferencedToken;
 import cn.carbs.tokenizer.type.TokenType;
 import cn.carbs.tokenizer.util.Utils;
 import cn.carbs.tokenizer.xml.XMLParser;
@@ -43,7 +43,7 @@ public class MainBackup {
         resourceRFilePaths.add("com.baidu.searchbox.novel.R");
 //        String filePath = "/Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business/lib_novel/lib-novel/src/main/java/com/baidu/searchbox/noveladapter/spswitch/NovelCommentBaseInputLayout.kt";
         String filePath = "/Users/v_wangjianjun02/Desktop/code/honor/baidu/baiduapp-android/browser-honor/repos/business/lib_novel/lib-novel/src/main/java/com/baidu/searchbox/noveladapter/spswitch/NovelCommentVerticalDefaultInputLayout.kt";
-        ArrayList<ReferencedToken> referencedTokens = WorkFlowOfCode.analyseReferencedResourceForFilePaths(filePath, resourceRFilePaths);
+        ArrayList<ReferencedToken> referencedTokens = WorkFlowOfCode.analyseReferencedResourceTokenForOneCodeFile(filePath, resourceRFilePaths);
 
         System.out.println("TEST referencedTokens for file : " + filePath);
         for (ReferencedToken referencedToken : referencedTokens) {
@@ -221,7 +221,7 @@ public class MainBackup {
                                     IdentifierMatcher wholePackagePathMatcher = new IdentifierMatcher(s, completeTokenStr)
                                             .setStandardImport(s);
                                     ReferencedToken referencedToken = new ReferencedToken(wholePackagePathMatcher, completeTokenStr)
-                                            .setStandardSimpleReference(completeTokenStr.substring(s.lastIndexOf('.') + 1));
+                                            .setStandardReferenceStr(completeTokenStr.substring(s.lastIndexOf('.') + 1));
 
                                     System.out.println("[MAYBE] ReferencedToken 1 --> " + referencedToken);
                                     referencedTokens.add(referencedToken);
@@ -290,7 +290,7 @@ public class MainBackup {
                                             .setStandardImport(s);
 
                                     ReferencedToken referencedToken = new ReferencedToken(wholePackagePathMatcher, completeTokenStr)
-                                            .setStandardSimpleReference(completeTokenStr.substring(s.lastIndexOf('.') + 1));
+                                            .setStandardReferenceStr(completeTokenStr.substring(s.lastIndexOf('.') + 1));
                                     System.out.println("[MAYBE] ReferencedToken 3 --> " + referencedToken);
                                     referencedTokens.add(referencedToken);
                                     break;

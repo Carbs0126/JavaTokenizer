@@ -1,11 +1,10 @@
 package cn.carbs.tokenizer;
 
 import cn.carbs.tokenizer.capsule.StringOrArrayList;
-import cn.carbs.tokenizer.search.CodeFileAndReferencedToken;
-import cn.carbs.tokenizer.search.IdentifierMatcher;
-import cn.carbs.tokenizer.search.ReferencedToken;
+import cn.carbs.tokenizer.reference.CodeFileAndReferencedToken;
+import cn.carbs.tokenizer.reference.IdentifierMatcher;
+import cn.carbs.tokenizer.reference.ReferencedToken;
 import cn.carbs.tokenizer.util.Utils;
-import cn.carbs.tokenizer.xml.XMLParser;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -58,7 +57,7 @@ public class WorkFlowOfResource {
                     if (resourceID != null && resourceID.length() > 0) {
                         ReferencedToken referencedToken = new ReferencedToken(resourceID)
                                 .setIdentifierMatcher(new IdentifierMatcher().setStandardImport(rootResourceImport))
-                                .setStandardSimpleReference(resourceID);
+                                .setStandardReferenceStr(resourceID);
                         referencedTokenArr.add(referencedToken);
                     }
                 }
@@ -74,7 +73,7 @@ public class WorkFlowOfResource {
         // 所有 code 引用到的资源：
         ArrayList<String> resourceRFilePaths = new ArrayList<>();
         resourceRFilePaths.add("com.baidu.searchbox.novel.R");
-        ArrayList<CodeFileAndReferencedToken> referencedArr = WorkFlowOfCode.traverseFolderAndAnalyseJavaAndKotlinCode(
+        ArrayList<CodeFileAndReferencedToken> referencedArr = WorkFlowOfCode.analyseReferencedResourceTokenForAbsFolderPath(
                 "/Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business/lib_novel/lib-novel",
                 resourceRFilePaths);
         if (referencedArr == null) {
@@ -102,11 +101,11 @@ public class WorkFlowOfResource {
                 if (referencedToken == null) {
                     continue;
                 }
-                if (referencedToken.simpleReferenceStr == null) {
+                if (referencedToken.standardReferenceStr == null) {
                     continue;
                 }
-                if (referencedToken.simpleReferenceStr.startsWith("R.drawable.")
-                        || referencedToken.simpleReferenceStr.startsWith("R.layout.")) {
+                if (referencedToken.standardReferenceStr.startsWith("R.drawable.")
+                        || referencedToken.standardReferenceStr.startsWith("R.layout.")) {
                     // 关注
                     filteredFlatReferencedToken.add(referencedToken);
                 }
@@ -119,8 +118,8 @@ public class WorkFlowOfResource {
         for (ReferencedToken t : filteredFlatReferencedToken) {
             System.out.println("--> " + t);
             // todo 目前暂时只根据 simpleReferenceStr 来染色，因为当前例子中，之前 standardImport 相同了
-            if (mapResourceToFiles.containsKey(t.simpleReferenceStr)) {
-                mapResourceToFiles.get(t.simpleReferenceStr).setState(1);
+            if (mapResourceToFiles.containsKey(t.standardReferenceStr)) {
+                mapResourceToFiles.get(t.standardReferenceStr).setState(1);
             }
         }
 

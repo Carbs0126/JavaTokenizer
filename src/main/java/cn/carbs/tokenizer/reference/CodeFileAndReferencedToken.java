@@ -1,4 +1,4 @@
-package cn.carbs.tokenizer.search;
+package cn.carbs.tokenizer.reference;
 
 import java.io.File;
 import java.util.ArrayList;

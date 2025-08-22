@@ -1,0 +1,133 @@
+// import static 可以指向静态内部类？
+// 1. 首先提供完整R包名。
+// 2. 命中R包名后，所有命中的，后缀都记下来，作为一个 HashSet
+// 3. 如果import中没有命中 R包名，则把当前package路径作为R的开头，即 some.package.path.R
+
+
+
+
+疑问：
+ad 模块分明没有 novel_inner_chapter_tail_ad_container_portrait_layout
+为什么ad模块中的 R.jar （即 R3.jar）中包含 novel_inner_chapter_tail_ad_container_portrait_layout呢？
+
+R4.jar 是 lib_novel_core/lib-novel-core 下生成的 资源 jar，生成在build文件夹下的 intermediates/compile_only_not_namespaced_r_class_jar 文件夹下
+
+
+android app 项目中有两个 library，分别命名为 library-a 和 library-b
+library-a 的包名是 com.lib.a，library-b 的包名是 com.lib.b。library-a 依赖 library-b。
+build项目后，这两个库，各自在 build/intermediates/compile_only_not_namespaced_r_class_jar 文件夹下生成 R.jar，
+我的疑问是，为什么 这两个 R.jar 中包含的R.class文件，除了包名不同，其余所有的资源都是相同的？
+
+ai回答：
+在 Android 项目中，两个 library（library-a 和 library-b）的 R.jar 中 R.class 资源内容相同（仅包名不同）的现象，主要与 Android 构建系统对库模块（Library Module）的资源处理机制有关，具体原因如下：
+1. Library 的 R 类本质：资源引用的 "代理"
+Android 中，库模块（Library）的R类与应用模块（Application Module）的R类有本质区别：
+
+应用模块的R类是常量类（字段被final修饰），资源 ID 在编译时固定。
+库模块的R类是变量类（字段无final修饰），资源 ID 在运行时由应用模块最终分配（因为库的资源可能被应用模块覆盖，或与其他库的资源冲突）。
+
+库的R类本质上是对资源的 "引用代理"，它的作用是让库代码能通过R.xxx.xxx的形式访问资源，而实际的资源 ID 值会在最终打包应用时由构建系统统一分配。
+2. 依赖传递导致资源合并
+当library-a依赖library-b时，Android 构建系统（AGP）会进行资源合并：
+
+library-b的所有资源（drawable、layout、string 等）会被 "继承" 到library-a中，作为library-a资源集的一部分。
+因此，library-a的R类不仅包含自身的资源，还会包含其依赖的library-b的所有资源（因为library-a的代码可能需要访问library-b的资源）。
+3. R.jar 的生成逻辑
+build/intermediates/compile_only_not_namespaced_r_class_jar目录下的R.jar，是构建过程中生成的编译时临时 R 类，用于库模块自身的编译（让代码能识别R.xxx引用）。
+
+对于本例：
+
+library-b的R类（com.lib.b.R）包含自身的所有资源。
+library-a的R类（com.lib.a.R）需要包含自身资源 + 依赖的library-b的所有资源（因为library-a依赖library-b，其代码可能访问library-b的资源）。
+
+因此，两者的R类会包含完全相同的资源条目（library-b的资源被library-a继承），唯一的区别是包名（分别对应各自的库包名）。
+总结
+核心原因是依赖传递导致的资源合并：library-a依赖library-b时，会继承library-b的所有资源，因此两者的R类（作为资源引用的代理）会包含相同的资源条目，仅包名不同。这是 Android 构建系统为了保证库之间资源访问的一致性而设计的机制。
+
+
+本例子中，library-b中有资源 layout/activity_base.xml，在 library-b中的某个java文件中，可以直接用 com.lib.b.R.layout.activity_base
+
+
+
+
+
+
+
+虽然你说的和这个工程中的依赖现象一致，但是，我新建了一个工程，用来测试你刚才说的。我用 mylibrary1 依赖 mylibrary2，在mylibrary1中，不能直接使用 mylibrary1的 包名.R.layout.mylibrary2_activity的方式引用 mylibrary2中的资源，即不能使用 mylibrary1 的R文件包名 来引用 mylibrary2中的资源，只能使用mylibrary2的R文件包名来引用mylibrary2中的资源，同时我发现 mylibrary1中没有在 build/intermediates 文件夹下生成compile_only_not_namespaced_r_class_jar文件夹，而是生成了compile_and_runtime_not_namespaced_r_class_jar，为什么？是我缺少什么配置吗
+
+
+你遇到的现象差异，主要与 Android Gradle 插件（AGP）版本 和 资源命名空间（Resource Namespacing）配置 有关。这两个因素直接影响了库模块的 R 类生成逻辑和资源引用方式，我们逐一分析：
+一、为什么 mylibrary1 不能用自身 R 类引用 mylibrary2 的资源？
+核心原因是 资源命名空间（Resource Namespacing）是否启用。
+
+Android 在 AGP 3.0 及以上引入了 资源命名空间 机制，目的是解决不同库之间的资源冲突问题。其核心作用是：让每个库的资源 “隔离”，依赖库无法通过自身 R 类访问被依赖库的资源，必须显式使用被依赖库的 R 类。
+
+如果启用了资源命名空间（AGP 3.0+ 后新建的库模块默认启用）：
+mylibrary2 的资源会被 “隔离” 在自身命名空间中，mylibrary1 即使依赖它，也不能通过 mylibrary1 的 R 类引用 mylibrary2 的资源，必须用 mylibrary2 自己的 R 类（如 com.lib.mylibrary2.R.layout.mylibrary2_activity）。
+如果未启用资源命名空间（旧版本 AGP 或手动关闭）：
+资源会被合并到依赖链中，mylibrary1 的 R 类会包含 mylibrary2 的资源，此时可以通过 mylibrary1 的 R 类引用。
+二、为什么生成的是 compile_and_runtime_not_namespaced_r_class_jar 而非 compile_only...？
+这与 R 类的 “作用域” 和 AGP 版本 相关：
+
+compile_only 与 compile_and_runtime 的区别：
+compile_only_not_namespaced_r_class_jar：仅用于编译时的 R 类（旧版 AGP 中，库的 R 类在编译时生成，运行时由主应用分配资源 ID）。
+compile_and_runtime_not_namespaced_r_class_jar：同时用于编译时和运行时的 R 类（新版 AGP 中，若未启用命名空间，R 类的作用域扩展，兼顾编译和运行）。
+与资源命名空间的关联：
+当启用资源命名空间时，库的 R 类是 “命名空间隔离” 的，其作用域和生成目录会与未启用时不同。
+你看到的 compile_and_runtime... 说明当前库未启用命名空间（not_namespaced 标识），但 AGP 版本较新，调整了 R 类的作用域目录。
+三、如何确认和调整配置？
+1. 检查资源命名空间是否启用
+在 mylibrary2 和 mylibrary1 的 build.gradle（或 build.gradle.kts）中，查看是否有 resourceNamespace 配置：
+
+gradle
+android {
+    // 若有此配置，说明启用了资源命名空间
+    resourceNamespace 'com.lib.mylibrary2'  // mylibrary2 的包名
+    ...
+}
+
+AGP 3.0+ 新建的库模块默认启用命名空间，因此会出现你观察到的 “必须用被依赖库 R 类” 的现象。
+旧工程可能未启用命名空间（无此配置），因此表现为 “依赖库 R 类包含被依赖库资源”。
+2. 如何让 mylibrary1 能用自身 R 类引用 mylibrary2 的资源？
+需关闭资源命名空间（不推荐，但若需兼容旧逻辑可临时调整）：
+在 mylibrary2 和 mylibrary1 的 build.gradle 中删除 resourceNamespace 配置，或显式关闭（仅 AGP 某些版本支持）：
+
+gradle
+android {
+    // 移除 resourceNamespace 配置，或添加以下配置（视 AGP 版本而定）
+    // 注意：AGP 较新版本可能强制要求命名空间，此配置可能无效
+    namespace 'com.lib.mylibrary2'  // 保留包名配置
+    // 不设置 resourceNamespace，即默认不启用命名空间
+    ...
+}
+
+注意：关闭命名空间会重新引入资源冲突风险（同名资源会被覆盖），Android 官方推荐启用命名空间以规范资源管理。
+总结
+你遇到的差异并非 “缺少配置”，而是 AGP 版本和资源命名空间机制 导致的：
+
+新工程默认启用资源命名空间，资源隔离，因此 mylibrary1 必须用 mylibrary2 的 R 类引用其资源。
+目录名称变化是 AGP 版本升级后对 R 类作用域的调整，属于正常现象。
+
+若需保持旧工程的行为，可关闭资源命名空间（不推荐）；若遵循官方最佳实践，建议保留命名空间，通过被依赖库的 R 类引用资源。
+
+
+gradle-6.3-all.zip 默认打开命名空间了吗？（gradle-6.3-all.zip 发现各个库中的资源的名字都是一样的，除了包名）
+Gradle 6.3 本身并不默认打开资源命名空间。
+
+资源命名空间是 Android Gradle 插件（AGP）7.0 及更高版本引入的功能。在 AGP 7.0 之前的版本，包括与 Gradle 6.3 配合使用的 AGP 版本，并不存在资源命名空间的概念，因此也不存在默认打开的情况。只有当使用 AGP 7.0 或更高版本时，才需要考虑资源命名空间的配置问题。
+
+android 项目在打包时，不会自动去重，相同md5且名称相同的文件，分布在不同文件夹时，不会自动去重
+
+
+
+// ============================================ 其它统计信息 ============================================
+// /Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business 下：
+// java 文件有 5424 个
+// kt 文件有 39 个
+// xml 文件有 3965 个
+
+
+
+
+
+

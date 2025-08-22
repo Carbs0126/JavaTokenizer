@@ -2,10 +2,13 @@ package cn.carbs.tokenizer.util;
 
 public class Log {
 
-    private static final boolean SILENCE_ERROR = false;
+    private static final boolean SILENCE_VERBOSE = true;
 
-    public static void d(String tag, String message, String fileName) {
+    private static final boolean SILENCE_ERROR = true;
+
+    public static void e(String tag, String message, String fileName) {
         if (SILENCE_ERROR) {
+            System.err.println("FILE NAME --> [" + fileName + "] ");
             System.err.println("PARSE ERROR --> [" + tag + "] " + message);
         } else {
             System.err.println("FILE NAME --> [" + fileName + "] ");
@@ -13,8 +16,15 @@ public class Log {
         }
     }
 
-    public static void e(String message) {
+    public static void wtf(String message) {
         throw new RuntimeException("ERROR --> [" + message + "] ");
+    }
+
+    public static void v(String message) {
+        if (SILENCE_VERBOSE) {
+            return;
+        }
+        System.out.println(message);
     }
 
 }

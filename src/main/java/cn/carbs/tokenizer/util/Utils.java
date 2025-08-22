@@ -5,8 +5,8 @@ import cn.carbs.tokenizer.core.ITokenParser;
 import cn.carbs.tokenizer.core.JavaTokenParser;
 import cn.carbs.tokenizer.core.KotlinTokenParser;
 import cn.carbs.tokenizer.entity.SealedToken;
-import cn.carbs.tokenizer.search.IdentifierMatcher;
-import cn.carbs.tokenizer.search.ReferencedToken;
+import cn.carbs.tokenizer.reference.IdentifierMatcher;
+import cn.carbs.tokenizer.reference.ReferencedToken;
 import cn.carbs.tokenizer.xml.XMLParser;
 
 import java.io.*;
@@ -51,12 +51,12 @@ public class Utils {
         File file = new File(filePath);
 
         if (!file.exists()) {
-            Log.e("文件不存在: " + filePath);
+            Log.wtf("文件不存在: " + filePath);
             return null;
         }
 
         if (!file.isFile()) {
-            Log.e("指定路径不是文件: " + filePath);
+            Log.wtf("指定路径不是文件: " + filePath);
             return null;
         }
 
@@ -167,7 +167,7 @@ public class Utils {
                     // todo wang 这里一定有问题，IdentifierMatcher 必须重新复制
                     IdentifierMatcher value = entry.getValue();
                     return new ReferencedToken(value, completeTokenStringBuilder)
-                            .setStandardSimpleReference(value.iPrefix + completeTokenStringBuilder.toString());
+                            .setStandardReferenceStr(value.iPrefix + completeTokenStringBuilder.toString());
                 } else {
                     // todo wang
                     /*
@@ -198,7 +198,7 @@ public class Utils {
                     // todo wang 这里一定有问题，IdentifierMatcher 必须重新复制
                     IdentifierMatcher value = entry.getValue();
                     return new ReferencedToken(value, completeTokenStringBuilder)
-                            .setStandardSimpleReference(value.iPrefix + completeTokenStringBuilder.toString());
+                            .setStandardReferenceStr(value.iPrefix + completeTokenStringBuilder.toString());
                 }
             }
         }
@@ -276,7 +276,7 @@ public class Utils {
         // 检查目录是否存在且是一个有效的文件夹
         if (!directory.exists() || !directory.isDirectory()) {
 //            System.out.println("无效的文件夹路径：" + directory.getAbsolutePath());
-            Log.e("无效的文件夹路径：" + directory.getAbsolutePath());
+            Log.wtf("无效的文件夹路径：" + directory.getAbsolutePath());
             return retFiles;
         }
 
@@ -307,7 +307,7 @@ public class Utils {
         // 检查目录是否存在且是一个有效的文件夹
         if (!directory.exists() || !directory.isDirectory()) {
 //            System.out.println("无效的文件夹路径：" + directory.getAbsolutePath());
-            Log.e("无效的文件夹路径：" + directory.getAbsolutePath());
+            Log.wtf("无效的文件夹路径：" + directory.getAbsolutePath());
             return retFiles;
         }
 
@@ -338,7 +338,7 @@ public class Utils {
         // 检查目录是否存在且是一个有效的文件夹
         if (!directory.exists() || !directory.isDirectory()) {
 //            System.out.println("无效的文件夹路径：" + directory.getAbsolutePath());
-            Log.e("无效的文件夹路径：" + directory.getAbsolutePath());
+            Log.wtf("无效的文件夹路径：" + directory.getAbsolutePath());
             return retFiles;
         }
 

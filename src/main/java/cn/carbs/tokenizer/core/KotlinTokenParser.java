@@ -103,7 +103,7 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.d("package or import 0", " current char : " + c, this.absFileName);
+                                Log.e("package or import 0", " current char : " + c, this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
@@ -179,12 +179,12 @@ public class KotlinTokenParser implements ITokenParser {
                         } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
                             if (isCommentStarter(c)) {
                                 // package 中应该没有行注释
-                                Log.d("package or import 1", " current char : " + c, this.absFileName);
+                                Log.e("package or import 1", " current char : " + c, this.absFileName);
                             } else if (c == '*') {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.d("package or import 2", " current char : " + c, this.absFileName);
+                                Log.e("package or import 2", " current char : " + c, this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InBlockComment) {
                             if (c == '*') {
@@ -215,14 +215,14 @@ public class KotlinTokenParser implements ITokenParser {
                                 preImportTokenType = TokenType.DotForIdentifier;
                                 preValidImportTokenType = TokenType.DotForIdentifier;
                                 continue;
-                            } else if (isExpressionEnd(c) || isStar(c)) {
+                            } else if (isExpressionEnd(c)) {
                                 importStrCache.append(c);
                                 importStrArr.add(importStrCache.toString());
                                 importStrCache.setLength(0);
                                 preImportTokenType = TokenType.None;
                                 preValidImportTokenType = TokenType.None;
                                 continue;
-                            } else if (isLegalIdentifierPostfix(c)) {
+                            } else if (isLegalIdentifierPostfix(c) || isStar(c)) {
                                 if (preImportTokenType == TokenType.Space && preValidImportTokenType == TokenType.Identifier) {
                                     // 直接进入import
                                     if ("import".equals(importStrCache.toString())) {
@@ -262,7 +262,7 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.MayCommentStarter;
                                 continue;
                             } else {
-                                Log.d("package or import 3", " current char : " + c, this.absFileName);
+                                Log.e("package or import 3", " current char : " + c, this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
                             if (isCommentStarter(c)) {
@@ -272,7 +272,7 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.d("package or import 4", " current char : " + c, this.absFileName);
+                                Log.e("package or import 4", " current char : " + c, this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
@@ -388,7 +388,7 @@ public class KotlinTokenParser implements ITokenParser {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else {
-                            Log.d("CommentOrString.None & TokenType.None",
+                            Log.e("CommentOrString.None & TokenType.None",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
                             continue;
                         }
@@ -454,7 +454,7 @@ public class KotlinTokenParser implements ITokenParser {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else {
-                            Log.d("CommentOrString.None & TokenType.Identifier",
+                            Log.e("CommentOrString.None & TokenType.Identifier",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
                             continue;
                         }
@@ -513,7 +513,7 @@ public class KotlinTokenParser implements ITokenParser {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                         } else {
-                            Log.d("CommentOrString.None & TokenType.Number",
+                            Log.e("CommentOrString.None & TokenType.Number",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
                             continue;
                         }
@@ -615,13 +615,13 @@ public class KotlinTokenParser implements ITokenParser {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else {
-                            Log.d("CommentOrString.None & TokenType.DotConfirmLater",
+                            Log.e("CommentOrString.None & TokenType.DotConfirmLater",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
                             continue;
                         }
                     } else {
                         // curToken.type == TokenType.Operator 这种情况不存在，因为 每次遇到 operator 都会回收并重置
-                        Log.d("CommentOrString.None & TokenType else",
+                        Log.e("CommentOrString.None & TokenType else",
                                 "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
                         continue;
                     }
@@ -686,7 +686,7 @@ public class KotlinTokenParser implements ITokenParser {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else {
-                            Log.d("CommentOrString.MayCommentStarter & current c else",
+                            Log.e("CommentOrString.MayCommentStarter & current c else",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i + ", current char : " + c, this.absFileName);
                             continue;
                         }
@@ -772,7 +772,7 @@ public class KotlinTokenParser implements ITokenParser {
     }
 
     private static boolean isLegalIdentifierPostfix(char c) {
-        return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || (c == '_') || (c == '$') || (c == '`') || (c == '@');
+        return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || (c == '_') || (c == '$') || (c == '@') || (c == '`');
     }
 
     private static boolean isParentheses(char c) {
@@ -839,7 +839,8 @@ public class KotlinTokenParser implements ITokenParser {
                 || c == '.' || c == '_'
                 || c == 'l' || c == 'L'
                 || c == 'x' || c == 'X'
-                || c == 'o' || c == 'O') {
+                || c == 'o' || c == 'O'
+                || c == 'p' || c == 'P') {
             return true;
         }
         return false;

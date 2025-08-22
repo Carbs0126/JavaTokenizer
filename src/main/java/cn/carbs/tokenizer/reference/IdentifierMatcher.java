@@ -1,4 +1,4 @@
-package cn.carbs.tokenizer.search;
+package cn.carbs.tokenizer.reference;
 
 /**
  * [IdentifierMatcher] -->
@@ -28,12 +28,12 @@ public class IdentifierMatcher {
     // 全路径引用时，此选项不为空
     public String wholePath;
     // xxx.xxx.xxx.R
-    public String standardImport;
+    public String standardImportStr;
 
-    public IdentifierMatcher(String lastIdentifier, String importPath, String standardImport, String iPrefix, String rPostfix) {
+    public IdentifierMatcher(String lastIdentifier, String importPath, String standardImportStr, String iPrefix, String rPostfix) {
         this.lastIdentifier = lastIdentifier;
         this.importPath = importPath;
-        this.standardImport = standardImport;
+        this.standardImportStr = standardImportStr;
         this.iPrefix = iPrefix;
         this.rPostfix = rPostfix;
     }
@@ -47,31 +47,20 @@ public class IdentifierMatcher {
 
     }
 
-    public IdentifierMatcher setStandardImport(String standardImport) {
-        this.standardImport = standardImport;
+    public IdentifierMatcher setStandardImport(String standardImportStr) {
+        this.standardImportStr = standardImportStr;
         return this;
     }
-
-//    public IdentifierMatcher setStandardSimpleReference(String simpleReference) {
-//        this.simpleReference = simpleReference;
-//        return this;
-//    }
-
-//    public IdentifierMatcher copy() {
-//        IdentifierMatcher copied = new IdentifierMatcher(
-//                this.lastIdentifier, this.importPath, this.standardImport, this.iPrefix, this.rPostfix);
-//        return copied;
-//    }
 
     @Override
     public String toString() {
         return "IdentifierMatcher{" +
-                "lastIdentifier='" + lastIdentifier + '\'' +
+                "standardImportStr='" + standardImportStr + '\'' +
                 ", importPath='" + importPath + '\'' +
+                ", lastIdentifier='" + lastIdentifier + '\'' +
                 ", iPrefix='" + iPrefix + '\'' +
                 ", rPostfix='" + rPostfix + '\'' +
                 ", wholePath='" + wholePath + '\'' +
-                ", standardImport='" + standardImport + '\'' +
                 '}';
     }
 }

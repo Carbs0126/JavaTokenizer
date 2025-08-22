@@ -1,4 +1,4 @@
-package cn.carbs.tokenizer.search;
+package cn.carbs.tokenizer.reference;
 
 import cn.carbs.tokenizer.entity.SealedToken;
 import cn.carbs.tokenizer.type.TokenType;
@@ -14,7 +14,7 @@ public class ReferencedToken {
     public String completedTokenStr;
 
     // R.layout.main_activity
-    public String simpleReferenceStr;
+    public String standardReferenceStr;
 
     public ReferencedToken(IdentifierMatcher identifierMatcher, ArrayList<SealedToken> completeIdentifierToken) {
         this.identifierMatcher = identifierMatcher;
@@ -43,8 +43,8 @@ public class ReferencedToken {
         this.tokenType = TokenType.String;
     }
 
-    public ReferencedToken setStandardSimpleReference(String simpleReferenceStr) {
-        this.simpleReferenceStr = simpleReferenceStr;
+    public ReferencedToken setStandardReferenceStr(String standardReferenceStr) {
+        this.standardReferenceStr = standardReferenceStr;
         return this;
     }
 
@@ -56,17 +56,17 @@ public class ReferencedToken {
     @Override
     public String toString() {
         return ">>> ReferencedToken{" +
-                "tokenType=" + tokenType.name() +
-                ", identifierMatcher=" + identifierMatcher +
+                "identifierMatcher=" + identifierMatcher +
+                ", standardReferenceStr='" + standardReferenceStr + '\'' +
                 ", completedTokenStr='" + completedTokenStr + '\'' +
-                ", simpleReferenceStr='" + simpleReferenceStr + '\'' +
+                ", tokenType=" + tokenType.name() +
                 '}';
     }
 
     @Override
     public int hashCode() {
-        if (identifierMatcher != null && identifierMatcher.standardImport != null && simpleReferenceStr != null) {
-            return identifierMatcher.standardImport.hashCode() + simpleReferenceStr.hashCode();
+        if (identifierMatcher != null && identifierMatcher.standardImportStr != null && standardReferenceStr != null) {
+            return identifierMatcher.standardImportStr.hashCode() + standardReferenceStr.hashCode();
         } else if (completedTokenStr != null) {
             return completedTokenStr.hashCode();
         }
