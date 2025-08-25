@@ -11,6 +11,8 @@ public class StringOrArrayList implements IStateful {
     // extra == 1 是被染色
     private int state = 0;
 
+    private long tag0;
+
     public StringOrArrayList(String str) {
         this.str = str;
     }
@@ -53,6 +55,15 @@ public class StringOrArrayList implements IStateful {
 
     public String getStr() {
         return this.str;
+    }
+
+    public StringOrArrayList setLongTag0(long tag0) {
+        this.tag0 = tag0;
+        return this;
+    }
+
+    public long getTag0() {
+        return this.tag0;
     }
 
     @Override

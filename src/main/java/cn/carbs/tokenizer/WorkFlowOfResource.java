@@ -1,5 +1,6 @@
 package cn.carbs.tokenizer;
 
+import cn.carbs.tokenizer.capsule.SameFilesResult;
 import cn.carbs.tokenizer.capsule.StringOrArrayList;
 import cn.carbs.tokenizer.reference.CodeFileAndReferencedToken;
 import cn.carbs.tokenizer.reference.IdentifierMatcher;
@@ -13,23 +14,21 @@ import java.util.HashSet;
 import java.util.Map;
 
 /**
- *
  * 染色
- *               /  layout-land/x_y.xml  ----   继续分析 x_y.xml 文件中对其他文件的引用
- *              /                           |
+ * /  layout-land/x_y.xml  ----   继续分析 x_y.xml 文件中对其他文件的引用
+ * /                           |
  * R.layout.x_y                             |
- *              \                           |
- *               \  layout/x_y.xml          |
- *                                          |
- *                                          |
- *      -------------------------------------
- *      |
- *      |            / ....
- *      ↓           /
+ * \                           |
+ * \  layout/x_y.xml          |
+ * |
+ * |
+ * -------------------------------------
+ * |
+ * |            / ....
+ * ↓           /
  * R.layout.sub_xxx
- *                  \
- *                   \ ....
- *
+ * \
+ * \ ....
  */
 public class WorkFlowOfResource {
 
@@ -67,13 +66,13 @@ public class WorkFlowOfResource {
         }
 
         // 所有 资源文件
-        HashMap<String, StringOrArrayList> mapResourceToFiles = traverseFolderAndAnalyseResource(
+        HashMap<String, StringOrArrayList> mapResourceToFiles = traverseResourceFolderAndAnalyseResource(
                 rootResourcePath, includedPrefixDirNameArr);
 
         // 所有 code 引用到的资源：
         ArrayList<String> resourceRFilePaths = new ArrayList<>();
         resourceRFilePaths.add("com.baidu.searchbox.novel.R");
-        ArrayList<CodeFileAndReferencedToken> referencedArr = WorkFlowOfCode.analyseReferencedResourceTokenForAbsFolderPath(
+        ArrayList<CodeFileAndReferencedToken> referencedArr = WorkFlowOfCode.analyseReferencedResourceTokenForAbsCodeFolderPath(
                 "/Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business/lib_novel/lib-novel",
                 resourceRFilePaths);
         if (referencedArr == null) {
@@ -135,11 +134,11 @@ public class WorkFlowOfResource {
         }
     }
 
-    // rootFolderAbsPath 改为 paths，可以指定 root path 或者直接指定一个xml
-    private static HashMap<String, StringOrArrayList> traverseFolderAndAnalyseResource(String rootFolderAbsPath,
-                                                                                       ArrayList<String> includedPrefixDirNameArr) {
+    // rootResourceFolderAbsPath 改为 paths，可以指定 root path 或者直接指定一个xml
+    private static HashMap<String, StringOrArrayList> traverseResourceFolderAndAnalyseResource(String rootResourceFolderAbsPath,
+                                                                                               ArrayList<String> includedPrefixDirNameArr) {
 
-        ArrayList<File> files = Utils.findFilesInCertainPrefixDir(new File(rootFolderAbsPath), includedPrefixDirNameArr);
+        ArrayList<File> files = Utils.findFilesInCertainPrefixDir(new File(rootResourceFolderAbsPath), includedPrefixDirNameArr);
 
 //        // todo wang 用于作为 colored seed file
 //        if (extraCertainFiles != null) {
@@ -227,6 +226,74 @@ public class WorkFlowOfResource {
         return mapResourceToFiles;
     }
 
+
+    // rootResourceFolderAbsPath 改为 paths，可以指定 root path 或者直接指定一个xml
+
+    /**
+     * 分析所有资源文件夹下，命中 includedPrefixDirNameArr 的文件，比如，分析 xxx/src/main/res 文件下的所有 "drawable" 和 "layout" 中的重复文件
+     *
+     * @param baseResourcePath                基础文件路径，针对 rootResourceFolderAbsPaths 所有的文件路径，便于打印
+     * @param rootResourceFoldersRelatedPaths 针对 baseResourcePath 的相对路径
+     * @param includedPrefixDirNameArr        传入 "drawable" "layout" 等
+     * @param extraAbsFilePaths               传入直接指定的文件
+     * @return
+     */
+    public static SameFilesResult analyseResourceFoldersForSameFiles(String baseResourcePath,
+                                                                     ArrayList<String> rootResourceFoldersRelatedPaths,
+                                                                     ArrayList<String> includedPrefixDirNameArr,
+                                                                     ArrayList<String> extraAbsFilePaths) {
+        if (rootResourceFoldersRelatedPaths == null) {
+            return null;
+        }
+        if (baseResourcePath == null) {
+            baseResourcePath = "";
+        }
+        ArrayList<File> files = new ArrayList<>(256);
+        boolean baseResourcePathEndWithSeparator = baseResourcePath.endsWith(File.separator);
+        for (String relatedPath : rootResourceFoldersRelatedPaths) {
+            String absResourceFolderPath = null;
+            if (baseResourcePathEndWithSeparator) {
+                if (relatedPath.startsWith(File.separator)) {
+                    // 需要删除一个文件夹分隔符
+                    absResourceFolderPath = baseResourcePath.substring(0, baseResourcePath.length() - 1) + relatedPath;
+                } else {
+                    absResourceFolderPath = baseResourcePath + relatedPath;
+                }
+            } else {
+                if (!relatedPath.startsWith(File.separator)) {
+                    // 需要增加一个文件夹分隔符
+                    absResourceFolderPath = baseResourcePath + File.separator + relatedPath;
+                } else {
+                    absResourceFolderPath = baseResourcePath + relatedPath;
+                }
+            }
+            ArrayList<File> filesInOneFolder = Utils.findFilesInCertainPrefixDir(new File(absResourceFolderPath), includedPrefixDirNameArr);
+            files.addAll(filesInOneFolder);
+        }
+
+        if (extraAbsFilePaths != null) {
+            for (String absFilePath : extraAbsFilePaths) {
+                File file = new File(absFilePath);
+                if (file.exists()) {
+                    files.add(file);
+                }
+            }
+        }
+        // 检测重复 md5 文件
+        HashMap<String, StringOrArrayList> mapMd5ToFiles = new HashMap<>();
+        // 存入 HashMap
+        for (File file : files) {
+            String fileMd5 = Utils.getFileMD5(file);
+            if (!mapMd5ToFiles.containsKey(fileMd5)) {
+                mapMd5ToFiles.put(fileMd5, new StringOrArrayList(file.getAbsolutePath()));
+            } else {
+                StringOrArrayList strOrArrObj = mapMd5ToFiles.get(fileMd5);
+                strOrArrObj.addString(file.getAbsolutePath());
+                strOrArrObj.setLongTag0(file.length());
+            }
+        }
+        return new SameFilesResult(baseResourcePath, mapMd5ToFiles, includedPrefixDirNameArr);
+    }
 
 
 }

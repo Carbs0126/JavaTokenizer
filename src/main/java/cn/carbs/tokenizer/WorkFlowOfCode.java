@@ -12,28 +12,13 @@ import java.util.ArrayList;
 
 public class WorkFlowOfCode {
 
-    public static void test1() {
-        ArrayList<String> resourceRFilePaths = new ArrayList<>();
-        resourceRFilePaths.add("com.baidu.searchbox.novel.R");
-        ArrayList<CodeFileAndReferencedToken> arr = analyseReferencedResourceTokenForAbsFolderPath(
-                "/Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business/lib_novel/lib-novel",
-                resourceRFilePaths);
-        if (arr == null) {
-            System.out.println("traverseFolderAndAnalyseJavaAndKotlinCode return null");
-        } else {
-            System.out.println("ArrayList<CodeFileAndReferencedToken> size : " + arr.size());
-            for (CodeFileAndReferencedToken codeFileAndReferencedToken : arr) {
-                System.out.println(codeFileAndReferencedToken);
-            }
-        }
-    }
-
     /**
+     * 传入代码目录 + 标准R代码包名，分析 java kotlin 代码，并返回代码中对 resource 的引用
      * @param rootFolderAbsPath
      * @param standardResourceImportPaths
      */
-    public static ArrayList<CodeFileAndReferencedToken> analyseReferencedResourceTokenForAbsFolderPath(String rootFolderAbsPath,
-                                                                                                       ArrayList<String> standardResourceImportPaths) {
+    public static ArrayList<CodeFileAndReferencedToken> analyseReferencedResourceTokenForAbsCodeFolderPath(String rootFolderAbsPath,
+                                                                                                           ArrayList<String> standardResourceImportPaths) {
         ArrayList<String> postfixArr = new ArrayList<>();
         ArrayList<CodeFileAndReferencedToken> retArr = new ArrayList<>();
         postfixArr.add("java");
@@ -65,6 +50,24 @@ public class WorkFlowOfCode {
         ArrayList<String> arrayList = Utils.readLinesForAbsFilePath(absCodeFilePath);
         ArrayList<SealedToken> tokens = Utils.genCodeTokenParserByFileName(absCodeFilePath).getTokens(arrayList);
         return ReferencedTokenAnalyser.analyseReferencedTokensFromSealedTokens(tokens, standardResourceImportPaths);
+    }
+
+    // ================================= 测试代码 =================================
+    // 测试
+    public static void test1() {
+        ArrayList<String> resourceRFilePaths = new ArrayList<>();
+        resourceRFilePaths.add("com.baidu.searchbox.novel.R");
+        ArrayList<CodeFileAndReferencedToken> arr = analyseReferencedResourceTokenForAbsCodeFolderPath(
+                "/Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business/lib_novel/lib-novel",
+                resourceRFilePaths);
+        if (arr == null) {
+            System.out.println("traverseFolderAndAnalyseJavaAndKotlinCode return null");
+        } else {
+            System.out.println("ArrayList<CodeFileAndReferencedToken> size : " + arr.size());
+            for (CodeFileAndReferencedToken codeFileAndReferencedToken : arr) {
+                System.out.println(codeFileAndReferencedToken);
+            }
+        }
     }
 
 }

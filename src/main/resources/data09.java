@@ -4178,7 +4178,7 @@ public final class FBReader extends BaseActivity implements BBANetworkChangeUtil
                         UIUtils.getNavigationHeight(this));
                 mNewReaderPerformanceAdView.setLayoutParams(layoutParams);
             }
-            mNewReaderPerformanceAdView.show();
+            // mNewReaderPerformanceAdView.show();
         }
     }
 
@@ -6573,7 +6573,6 @@ public final class FBReader extends BaseActivity implements BBANetworkChangeUtil
         }
         if (mBottomReadCurrentPageMenu != null) {
             mBottomReadCurrentPageMenu.updateOnShow(mBannerAdLayout);
-            mBottomReadCurrentPageMenu.show(null);
         }
     }
 
@@ -8217,7 +8216,7 @@ public final class FBReader extends BaseActivity implements BBANetworkChangeUtil
                     if (childAt instanceof ISignRewardCoin) {
                         signRewardCoin = (ISignRewardCoin) childAt;
                         signRewardCoin.setCoinNum(coinNum);
-                        signRewardCoin.show();
+//                        signRewardCoin.show();
                     }
                 }
             }

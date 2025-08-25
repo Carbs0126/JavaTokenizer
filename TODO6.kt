@@ -22,4 +22,8 @@ fun main() {
     """
     println(x)
 
+    var xasdfa = "hello\nwo\"rld";
+    var afdaw = 'a';
+    var daf = 1000f;
+
 }

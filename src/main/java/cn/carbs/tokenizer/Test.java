@@ -1,6 +1,7 @@
 package cn.carbs.tokenizer;
 
 import cn.carbs.tokenizer.entity.SealedToken;
+import cn.carbs.tokenizer.reference.ReferencedToken;
 import cn.carbs.tokenizer.type.TokenType;
 import cn.carbs.tokenizer.util.Log;
 import cn.carbs.tokenizer.util.Utils;
@@ -11,10 +12,29 @@ import java.util.ArrayList;
 public class Test {
 
     /**
+     * standardResourceImports 举例：
+     *  ArrayList<String> resourceRFilePaths = new ArrayList<>();
+     *  resourceRFilePaths.add("com.baidu.searchbox.novel.R");
+     *  resourceRFilePaths.add("com.baidu.novel.R");
+     *  resourceRFilePaths.add("com.baidu.searchbox.R");
+     *  resourceRFilePaths.add("com.searchbox.novel.R");
+     * @param absCodeFilePath 绝对路径
+     * @param standardResourceImports R 的标准引包
+     */
+    private static void analyseOneCodeFileForReferencedTokens(String absCodeFilePath, ArrayList<String> standardResourceImports) {
+        ArrayList<ReferencedToken> referencedTokens =
+                WorkFlowOfCode.analyseReferencedResourceTokenForOneCodeFile(absCodeFilePath, standardResourceImports);
+        System.out.println("TEST referencedTokens for file : " + absCodeFilePath);
+        for (ReferencedToken referencedToken : referencedTokens) {
+            System.out.println(referencedToken);
+        }
+    }
+
+    /**
      * 分析某个目录下所有的 java 和 kotlin 代码，用来验证 parser 的准确性
      * @param rootFolderAbsPath
      */
-    public static void analyseJavaAndKotlinFiles(String rootFolderAbsPath) {
+    public static void analyseJavaAndKotlinFilesForSealedTokens(String rootFolderAbsPath) {
         long startTime = System.currentTimeMillis();
 
         ArrayList<String> postfixArr = new ArrayList<>();
@@ -28,9 +48,8 @@ public class Test {
         for (File file : files) {
             Log.v("Progress -> total : " + filesSize + ", current : " + (i++) + ", file : ");
             Log.v(file.getAbsolutePath());
-            analyseOneJavaOrKotlinFile(file.getAbsolutePath(), false);
+            analyseOneJavaOrKotlinFileForSealedTokens(file.getAbsolutePath(), false);
         }
-
         long endTime = System.currentTimeMillis();
         long durationInMillis = endTime - startTime;
         Log.v("analyseJavaAndKotlinFiles() finish! duration : " + durationInMillis + " ms");
@@ -40,7 +59,7 @@ public class Test {
      * 传入一个本地的 .java 或者 .kt 文件绝对路径，打印这个文件解析后的 token，用来验证 parser 的准确性
      * @param absFilePath
      */
-    public static void analyseOneJavaOrKotlinFile(String absFilePath, boolean printTokens) {
+    public static void analyseOneJavaOrKotlinFileForSealedTokens(String absFilePath, boolean printTokens) {
 
         // 读取文件
         ArrayList<String> arrayList = Utils.readLinesForAbsFilePath(absFilePath);

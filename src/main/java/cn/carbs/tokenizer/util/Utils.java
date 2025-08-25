@@ -648,4 +648,36 @@ public class Utils {
         }
     }
 
+
+    private static final String[] UNITS = {"B", "KB", "MB", "GB", "TB"};
+
+    /**
+     * 把字节数转换成易读格式。
+     * 1023  → 1023 B
+     * 1024  → 1 KB
+     * 1 234 567 → 1.2 MB
+     */
+    public static String getReadableFileSize(long bytes) {
+        if (bytes < 0) {
+            throw new IllegalArgumentException("bytes must be >= 0");
+        }
+
+        // 如果字节数小于 1024，直接返回 “xxx B”
+        if (bytes < 1024) {
+            return bytes + "" + UNITS[0];
+        }
+
+        int unitIndex = 0;
+        double value = bytes;
+
+        // 每除一次 1024，单位升一级
+        while (value >= 1024 && unitIndex < UNITS.length - 1) {
+            value /= 1024;
+            unitIndex++;
+        }
+
+        // 保留 1 位小数，并去掉无意义的 .0
+        return String.format("%.1f", value).replace(".0", "") + "" + UNITS[unitIndex];
+    }
+
 }
