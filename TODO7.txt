@@ -3,7 +3,7 @@
 // Written by David Megginson
 // NO WARRANTY!  This class is in the public domain.
 // $Id: Attributes.java,v 1.13 2004/03/18 12:28:05 dmegginson Exp $
-
+// 72行有特殊字符
 package cn.carbs.tokenizer.backup;
 
 

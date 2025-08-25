@@ -73,8 +73,15 @@ public class Test {
                 preToken = curToken;
             }
         }
-        System.out.println("=================== ↓ display tokens ↓ ===================");
+        System.out.println("=================== ↓ display tokens as string ↓ ===================");
         System.out.println(tokensStr);
+        System.out.println("=================== ↓ display tokens one by one ↓ ===================");
+        for (SealedToken sealedToken : tokens) {
+            if (sealedToken.type == TokenType.NotExistTokenNewLine) {
+                continue;
+            }
+            System.out.println(sealedToken);
+        }
         System.out.println("File : [ " + absFilePath + " ]");
         System.out.println("Token size : " + tokens.size());
     }

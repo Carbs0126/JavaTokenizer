@@ -1,32 +1,24 @@
 package cn.carbs.tokenizer;
 
-import cn.carbs.tokenizer.backup.Attributes;
 import cn.carbs.tokenizer.reference.ReferencedToken;
 
 import java.util.ArrayList;
 
 public class Main {
 
-//    private final@Deprecated  String mPostScriptName  = "";
-
-//    public static int \u00CB = 1;
-
     public static void main(String[] argv) {
 
-        /*Test.analyseJavaAndKotlinFiles(
+        Test.analyseJavaAndKotlinFiles(
 //                "/Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business/lib_novel"              // 1119 files, 851ms, pass
                 "/Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business/lib_novel_core"           // 2594 files, 2162 ms, pass
 //                "/Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business/lib_novel_custome"      // 808 files, 925ms, pass
 //                "/Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business/lib_novel_reader"       // 576 files, 1039ms, pass
 //                "/Users/v_wangjianjun02/Desktop/code/honor/baidu/browser-android/novel-sdk/repos/business/lib_novel_reader_frame" // 365 files, 656ms, pass
-        );*/
+        );
 
-//        Test.analyseJavaAndKotlinFiles("/Users/v_wangjianjun02/Library/Android/sdk/sources/android-34");
-//        Test.analyseJavaAndKotlinFiles("/Users/v_wangjianjun02/Desktop/jdk/jdk");
-        Test.analyseJavaAndKotlinFiles("/Users/wangchao/Downloads/jdk-master");
+//        Test.analyseJavaAndKotlinFiles("/Users/wangchao/Downloads/jdk-master");
 
 //        Test.analyseOneJavaOrKotlinFile("/Users/wangchao/Downloads/jdk-master/src/jdk.javadoc/share/classes/jdk/javadoc/internal/doclets/toolkit/util/CommentHelper.java", true);
-//        Test.analyseOneJavaOrKotlinFile("/Users/wangchao/Downloads/jdk-master/test/jdk/java/awt/PrintJob/PrintComponentTest.java", true);
 
     }
 

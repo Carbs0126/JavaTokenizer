@@ -103,8 +103,8 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.e("package or import 0", " current char : ->"
-                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                Log.e("package or import 0", "current line : " + (lineIndex + 1)
+                                        + " current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
@@ -180,14 +180,20 @@ public class KotlinTokenParser implements ITokenParser {
                         } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
                             if (isCommentStarter(c)) {
                                 // package 中应该没有行注释
-                                Log.e("package or import 1", " current char : ->"
-                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                codeSectionType = CodeSectionType.ImportSection;
+                                prePackageTokenType = TokenType.None;
+                                preValidPackageTokenType = TokenType.None;
+                                sCommentOrString = CommentOrString.InSlashComment;
+                                // package 结束了
+//                                Log.e("package or import 1 kt", " current char : ->"
+//                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+
                             } else if (c == '*') {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.e("package or import 2", " current char : ->"
-                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                Log.e("package or import 2", "current line : " + (lineIndex + 1)
+                                        + " current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InBlockComment) {
                             if (c == '*') {
@@ -246,7 +252,7 @@ public class KotlinTokenParser implements ITokenParser {
                                             preImportTokenType = TokenType.Identifier;
                                             preValidImportTokenType = TokenType.Identifier;
                                         } else {
-                                            importStrArr.add(importStrCache.toString());
+//                                            importStrArr.add(importStrCache.toString());
                                             importStrCache.setLength(0);
                                             codeSectionType = CodeSectionType.ContentSection;
                                             preImportTokenType = TokenType.None;
@@ -265,8 +271,8 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.MayCommentStarter;
                                 continue;
                             } else {
-                                Log.e("package or import 3", " current char : ->"
-                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                Log.e("package or import 3", "current line : " + (lineIndex + 1)
+                                        + " current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.MayCommentStarter) {
                             if (isCommentStarter(c)) {
@@ -276,8 +282,8 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             } else {
-                                Log.e("package or import 4", " current char : ->"
-                                        + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
+                                Log.e("package or import 4", "current line : " + (lineIndex + 1)
+                                        + " current char : ->" + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                             }
                         } else if (sCommentOrString == CommentOrString.InSlashComment) {
                             continue;
@@ -340,7 +346,8 @@ public class KotlinTokenParser implements ITokenParser {
                             sCommentOrString = CommentOrString.MayCommentStarter;
                             continue;
                         } else if (isStringSymbol(c)) {
-                            sCommentOrString = CommentOrString.InString;
+//                            sCommentOrString = CommentOrString.InString;
+                            sCommentOrString = CommentOrString.MayStringStarter0;
                             sCurrentToken.type = TokenType.String;
                             sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
@@ -407,7 +414,8 @@ public class KotlinTokenParser implements ITokenParser {
                         } else if (isStringSymbol(c)) {
                             // todo 不可能，输出log
                             collectTokenAndResetCache(tokens, sCurrentToken);
-                            sCommentOrString = CommentOrString.InString;
+//                            sCommentOrString = CommentOrString.InString;
+                            sCommentOrString = CommentOrString.MayStringStarter0;
                             sCurrentToken.type = TokenType.String;
                             sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
@@ -481,7 +489,8 @@ public class KotlinTokenParser implements ITokenParser {
                         } else if (isStringSymbol(c)) {
                             // todo 不可能，输出log
                             collectTokenAndResetCache(tokens, sCurrentToken);
-                            sCommentOrString = CommentOrString.InString;
+//                            sCommentOrString = CommentOrString.InString;
+                            sCommentOrString = CommentOrString.MayStringStarter0;
                             sCurrentToken.type = TokenType.String;
                             sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
@@ -668,7 +677,8 @@ public class KotlinTokenParser implements ITokenParser {
                             continue;
                         } else if (isStringSymbol(c)) {
                             // todo 不可能，输出log
-                            sCommentOrString = CommentOrString.InString;
+//                            sCommentOrString = CommentOrString.InString;
+                            sCommentOrString = CommentOrString.MayStringStarter0;
                             sCurrentToken.type = TokenType.String;
                             sCurrentToken.extraInt = 0;
                             sCurrentToken.appendLiteralChar(c);
@@ -729,6 +739,37 @@ public class KotlinTokenParser implements ITokenParser {
                         sCommentOrString = CommentOrString.InBlockComment;
                     }
                     continue;
+                } else if (sCommentOrString == CommentOrString.MayStringStarter0) {
+                    if (isStringSymbol(c)) {
+                        sCommentOrString = CommentOrString.MayStringStarter1;
+                    } else {
+                        sCommentOrString = CommentOrString.InString;
+                        if (isEscape(c)) {
+                            // 当前字符为 /
+                            sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_READY;
+                        } else {
+                            sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                        }
+                    }
+                    // 字符串继续
+                    sCurrentToken.appendLiteralChar(c);
+                    continue;
+                } else if (sCommentOrString == CommentOrString.MayStringStarter1) {
+                    if (isStringSymbol(c)) {
+                        // 连着三个 """
+                        sCommentOrString = CommentOrString.InBlockString;
+                        // 字符串继续
+                        sCurrentToken.appendLiteralChar(c);
+                    } else {
+                        // 上一个 空 string 结束了 ""
+                        sCommentOrString = CommentOrString.None;
+                        // 上一个是普通 string
+                        sCurrentToken.type = TokenType.String;
+                        collectTokenAndResetCache(tokens, sCurrentToken);
+                        // 把当前的字符收进去
+                        sCurrentToken.appendLiteralChar(c);
+                    }
+                    continue;
                 } else if (sCommentOrString == CommentOrString.InString) {
                     if (sCurrentToken.extraInt == TokenCache.IN_STRING_MODE_ESCAPE_IDLE) {
                         // 前一个字符不是 escape 转义字符
@@ -738,17 +779,6 @@ public class KotlinTokenParser implements ITokenParser {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
-//                            // 检查前一个字符是否为转义符
-//                            if (sCurrentToken.literalStrLength() > 0 && isEscape(sCurrentToken.getLastChar())) {
-//                                // 前一个字符为转义字符，当前 " 字符仍然在 字符串内
-//                                sCurrentToken.appendLiteralChar(c);
-//                            } else {
-//                                // 结束当前字符串
-//                                sCommentOrString = CommentOrString.None;
-//                                sCurrentToken.appendLiteralChar(c);
-//                                collectTokenAndResetCache(tokens, sCurrentToken);
-//                            }
-//                            continue;
                         } else {
                             // 当前字符不为 "
                             if (isEscape(c)) {
@@ -768,6 +798,43 @@ public class KotlinTokenParser implements ITokenParser {
                         // 2. 取消转义模式
                         sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
                         // 3. 并继续string模式
+                        continue;
+                    }
+                } else if (sCommentOrString == CommentOrString.InBlockString) {
+                    // 位于 """ """ 之间，kotlin 中，""" """ 之间没有转义字符，因此不需要关注转义字符
+                    if (isStringSymbol(c)) {
+                        // 如果当前字符为 "
+                        sCommentOrString = CommentOrString.MayStringEnd0;
+                        sCurrentToken.appendLiteralChar(c);
+                        continue;
+                    } else {
+                        // 当前字符不为 "
+                        // 字符串继续
+                        sCurrentToken.appendLiteralChar(c);
+                        continue;
+                    }
+                } else if (sCommentOrString == CommentOrString.MayStringEnd0) {
+                    if (isStringSymbol(c)) {
+                        sCommentOrString = CommentOrString.MayStringEnd1;
+                        sCurrentToken.appendLiteralChar(c);
+                        continue;
+                    } else {
+                        // 回退到 InBlockString
+                        sCommentOrString = CommentOrString.InBlockString;
+                        sCurrentToken.appendLiteralChar(c);
+                        continue;
+                    }
+                } else if (sCommentOrString == CommentOrString.MayStringEnd1) {
+                    if (isStringSymbol(c)) {
+                        sCommentOrString = CommentOrString.None;
+                        sCurrentToken.type = TokenType.StringBlock;
+                        sCurrentToken.appendLiteralChar(c);
+                        collectTokenAndResetCache(tokens, sCurrentToken);
+                        continue;
+                    } else {
+                        // 回退到 InBlockString
+                        sCommentOrString = CommentOrString.InBlockString;
+                        sCurrentToken.appendLiteralChar(c);
                         continue;
                     }
                 }
