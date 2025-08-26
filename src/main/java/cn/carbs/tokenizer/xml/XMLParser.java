@@ -123,11 +123,4 @@ public class XMLParser {
         return c == '"';
     }
 
-    private static void printError(String tag, String message) {
-        System.err.println("PARSE ERROR --> [" + tag + "] " + message);
-    }
-
-    private static void print(String message) {
-        System.out.println(" " + message);
-    }
 }

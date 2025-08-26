@@ -519,6 +519,11 @@ public class KotlinTokenParser implements ITokenParser {
                             // 收 operator
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
+                        } else if (isDot(c)) {
+                            // todo wang
+                            sCurrentToken.extraInt = TokenCache.IN_NUMBER_MODE;
+                            sCurrentToken.type = TokenType.DotConfirmLater;
+                            sCurrentToken.appendLiteralChar(c);
                         } else if (isLegalNumberPostfix(c)) {
                             // 继续
                             sCurrentToken.appendLiteralChar(c);
@@ -603,6 +608,24 @@ public class KotlinTokenParser implements ITokenParser {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
+                        } else if (isCharSymbol(c)) {
+                            if (sCurrentToken.extraInt == TokenCache.IN_RANGE_MODE) {
+
+                                sCurrentToken.type = TokenType.DotForRange;
+                                collectTokenAndResetCache(tokens, sCurrentToken);
+
+                                sCurrentToken.type = TokenType.Char;
+                                sCurrentToken.appendLiteralChar(c);
+                                continue;
+                            } else {
+                                // 可能出错
+                                Log.e("CommentOrString.None & TokenType.DotConfirmLater",
+                                        "isCharSymbol(), line : " + (lineIndex + 1) + ", columnIndex : " + i
+                                                + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                                + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
+
+                            }
+                            continue;
                         }
                         // 前面的 dot 按照 DotForIdentifier 处理
                         sCurrentToken.type = TokenType.DotForIdentifier;
@@ -632,6 +655,7 @@ public class KotlinTokenParser implements ITokenParser {
                             continue;
                         } else if (isDot(c)) {
                             // todo wang
+                            sCurrentToken.extraInt = TokenCache.IN_RANGE_MODE;
                             sCurrentToken.type = TokenType.DotConfirmLater;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
@@ -642,7 +666,7 @@ public class KotlinTokenParser implements ITokenParser {
                             continue;
                         } else {
                             Log.e("CommentOrString.None & TokenType.DotConfirmLater",
-                                    "line : " + (lineIndex + 1) + ", columnIndex : " + i
+                                    "else, line : " + (lineIndex + 1) + ", columnIndex : " + i
                                             + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
                                             + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
@@ -930,7 +954,8 @@ public class KotlinTokenParser implements ITokenParser {
                 || c == 'l' || c == 'L'
                 || c == 'x' || c == 'X'
                 || c == 'o' || c == 'O'
-                || c == 'p' || c == 'P') {
+                || c == 'p' || c == 'P'
+                || c == 'u' || c == 'U') {
             return true;
         }
         return false;

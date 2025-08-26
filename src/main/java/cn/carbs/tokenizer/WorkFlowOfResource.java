@@ -134,50 +134,12 @@ public class WorkFlowOfResource {
         }
     }
 
+    // todo 被 analyseOneResourceFolderForIDInfoArr 替代
     // rootResourceFolderAbsPath 改为 paths，可以指定 root path 或者直接指定一个xml
     private static HashMap<String, StringOrArrayList> traverseResourceFolderAndAnalyseResource(String rootResourceFolderAbsPath,
                                                                                                ArrayList<String> includedPrefixDirNameArr) {
 
         ArrayList<File> files = Utils.findFilesInCertainPrefixDir(new File(rootResourceFolderAbsPath), includedPrefixDirNameArr);
-
-//        // todo wang 用于作为 colored seed file
-//        if (extraCertainFiles != null) {
-//            for (String extraCertainFilePath : extraCertainFiles) {
-//                File file = new File(extraCertainFilePath);
-//                if (file.exists()) {
-//                    files.add(file);
-//                    System.out.println("==** >> " + file.getAbsolutePath());
-//                }
-//            }
-//        }
-
-
-        System.out.println("Resource file count : " + files.size());
-        int filesSize = files.size();
-        int i = 0;
-        // 检测重复 md5 文件
-        HashMap<String, StringOrArrayList> mapMd5ToFiles = new HashMap<>();
-        // 存入 HashMap
-        for (File file : files) {
-            String fileMd5 = Utils.getFileMD5(file);
-            System.out.println("Progress -> total : " + filesSize + ", current : " + i + ", file md5 : " + fileMd5 + ", file : ");
-            System.out.println(file.getAbsolutePath());
-            i++;
-            if (!mapMd5ToFiles.containsKey(fileMd5)) {
-                mapMd5ToFiles.put(fileMd5, new StringOrArrayList(file.getAbsolutePath()));
-            } else {
-                StringOrArrayList strOrArrObj = mapMd5ToFiles.get(fileMd5);
-                strOrArrObj.addString(file.getAbsolutePath());
-            }
-        }
-
-        // 读取 HashMap
-        for (Map.Entry<String, StringOrArrayList> entry : mapMd5ToFiles.entrySet()) {
-            StringOrArrayList value = entry.getValue();
-            if (value.isArray()) {
-                System.out.println("重复资源: [\n" + value.toString() + "]");
-            }
-        }
 
         // 将所有的文件变为 R.layout.xxx 和 R.drawable.xxx
         // HashMap<String, ArrayList>  ArrayList 是文件路径
@@ -222,12 +184,76 @@ public class WorkFlowOfResource {
             System.out.println(key + ": [\n" + value.toString() + "]");
         }
 
+        System.out.println("Resource file count : " + files.size());
         System.out.println("Code analysis finished!");
         return mapResourceToFiles;
     }
 
+    /**
+     * 传入一个资源文件夹路径（如"xxx/xxx/res"）+ 一个 namespace，用于生成完整的资源路径，my.package.path.R.drawable.abc
+     * @param rootResourceFolderAbsPath
+     * @param namespace 如果是 library 则对应 namespace，如果是 application 则对应 applicationId
+     * @param includedPrefixDirNameArr
+     * @return
+     */
+    private static HashMap<String, StringOrArrayList> analyseOneResourceFolderForIDInfoArr(String rootResourceFolderAbsPath,
+                                                                                           String namespace,
+                                                                                           ArrayList<String> includedPrefixDirNameArr) {
 
-    // rootResourceFolderAbsPath 改为 paths，可以指定 root path 或者直接指定一个xml
+        ArrayList<File> files = Utils.findFilesInCertainPrefixDir(new File(rootResourceFolderAbsPath), includedPrefixDirNameArr);
+
+        // 将所有的文件变为 R.layout.xxx 和 R.drawable.xxx
+        // HashMap<String, ArrayList>  ArrayList 是文件路径
+        HashMap<String, StringOrArrayList> mapResourceToFiles = new HashMap<>();
+        // todo wang
+        for (File file : files) {
+            if (file.isDirectory()) {
+                continue;
+            }
+            // R.layout.xxx
+            StringBuilder resourceStringBuilder = new StringBuilder();
+            String resourceString = Utils.getLastFolderName(file);
+
+            boolean isConcernedResourceName = false;
+            if (resourceString.startsWith("layout")) {
+                resourceStringBuilder.append("R.layout.");
+                isConcernedResourceName = true;
+            } else if (resourceString.startsWith("drawable")) {
+                resourceStringBuilder.append("R.drawable.");
+                isConcernedResourceName = true;
+            }
+            if (!isConcernedResourceName) {
+                continue;
+            }
+            String simpleFileNameWithoutPostfix = Utils.getFileNameBeforeFirstDot(file);
+            resourceStringBuilder.append(simpleFileNameWithoutPostfix);
+
+            if (namespace != null && namespace.length() > 0) {
+                resourceStringBuilder.insert(0, namespace);
+            }
+
+            String resourceStr = resourceStringBuilder.toString();
+            if (!mapResourceToFiles.containsKey(resourceStr)) {
+                mapResourceToFiles.put(resourceStr, new StringOrArrayList(file.getAbsolutePath()));
+            } else {
+                StringOrArrayList stringOrArrayList = mapResourceToFiles.get(resourceStr);
+                stringOrArrayList.addString(file.getAbsolutePath());
+            }
+        }
+
+        System.out.println("=================== resource id ===================");
+
+        // 读取 HashMap
+        for (Map.Entry<String, StringOrArrayList> entry : mapResourceToFiles.entrySet()) {
+            String key = entry.getKey();
+            StringOrArrayList value = entry.getValue();
+            System.out.println(key + ": [\n" + value.toString() + "]");
+        }
+
+        System.out.println("Resource file count : " + files.size());
+        System.out.println("Code analysis finished!");
+        return mapResourceToFiles;
+    }
 
     /**
      * 分析所有资源文件夹下，命中 includedPrefixDirNameArr 的文件，比如，分析 xxx/src/main/res 文件下的所有 "drawable" 和 "layout" 中的重复文件

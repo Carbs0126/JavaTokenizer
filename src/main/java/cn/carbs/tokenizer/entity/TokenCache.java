@@ -9,6 +9,9 @@ public class TokenCache {
     public static final int IN_STRING_MODE_ESCAPE_IDLE = 0;
     public static final int IN_STRING_MODE_ESCAPE_READY = 1;
 
+    public static final int IN_NUMBER_MODE = 10;
+    public static final int IN_RANGE_MODE = 11;
+
     public TokenType type;
 
     public StringBuilder literalStr;

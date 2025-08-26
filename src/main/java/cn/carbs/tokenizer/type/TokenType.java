@@ -9,8 +9,9 @@ public enum TokenType {
     Number,
     String,
     StringBlock,        // """
-    DotForIdentifier,    // 用于 identifier 合成
     DotConfirmLater,
+    DotForIdentifier,   // 用于 identifier 合成
+    DotForRange,        // ..
     Char,
     CommentLine,
     CommentBlock,

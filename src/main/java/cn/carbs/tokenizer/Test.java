@@ -1,5 +1,6 @@
 package cn.carbs.tokenizer;
 
+import cn.carbs.tokenizer.capsule.SameFilesResult;
 import cn.carbs.tokenizer.entity.SealedToken;
 import cn.carbs.tokenizer.reference.ReferencedToken;
 import cn.carbs.tokenizer.type.TokenType;
@@ -11,14 +12,46 @@ import java.util.ArrayList;
 
 public class Test {
 
+    public static class Example {
+
+        public static void checkSameFilesByMd5() {
+            String baseResourcePath = "/Users/wangchao/Downloads/";
+            ArrayList<String> rootResourceFoldersRelatedPaths = new ArrayList<>();
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel/lib-novel/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel/lib-novel-interface/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel/lib-novel-stub-interface/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_core/lib-novel-audio/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_core/lib-novel-audio-interface/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_core/lib-novel-core/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_core/lib-novel-res/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_core/lib-novel-service-ui/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_core/lib-novel-shelf/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_custome/androidx/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_reader/lib-novel-reader/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_reader_frame/lib-reader-components/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_reader_frame/lib-reader-core/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_reader_frame/lib-reader-res/src/main/res");
+            rootResourceFoldersRelatedPaths.add("novel-sdk/repos/business/lib_novel_reader_frame/lib-reader-view/src/main/res");
+
+            ArrayList<String> includedPrefixDirNameArr = new ArrayList<>();
+            includedPrefixDirNameArr.add("layout");
+            includedPrefixDirNameArr.add("drawable");
+
+            SameFilesResult result = WorkFlowOfResource.analyseResourceFoldersForSameFiles(
+                    baseResourcePath, rootResourceFoldersRelatedPaths, includedPrefixDirNameArr, null);
+            result.showSortedInfo();
+        }
+    }
+
     /**
      * standardResourceImports 举例：
-     *  ArrayList<String> resourceRFilePaths = new ArrayList<>();
-     *  resourceRFilePaths.add("com.baidu.searchbox.novel.R");
-     *  resourceRFilePaths.add("com.baidu.novel.R");
-     *  resourceRFilePaths.add("com.baidu.searchbox.R");
-     *  resourceRFilePaths.add("com.searchbox.novel.R");
-     * @param absCodeFilePath 绝对路径
+     * ArrayList resourceRFilePaths = new ArrayList<>();
+     * resourceRFilePaths.add("com.baidu.searchbox.novel.R");
+     * resourceRFilePaths.add("com.baidu.novel.R");
+     * resourceRFilePaths.add("com.baidu.searchbox.R");
+     * resourceRFilePaths.add("com.searchbox.novel.R");
+     *
+     * @param absCodeFilePath         绝对路径
      * @param standardResourceImports R 的标准引包
      */
     private static void analyseOneCodeFileForReferencedTokens(String absCodeFilePath, ArrayList<String> standardResourceImports) {
@@ -32,6 +65,7 @@ public class Test {
 
     /**
      * 分析某个目录下所有的 java 和 kotlin 代码，用来验证 parser 的准确性
+     *
      * @param rootFolderAbsPath
      */
     public static void analyseJavaAndKotlinFilesForSealedTokens(String rootFolderAbsPath) {
@@ -57,6 +91,7 @@ public class Test {
 
     /**
      * 传入一个本地的 .java 或者 .kt 文件绝对路径，打印这个文件解析后的 token，用来验证 parser 的准确性
+     *
      * @param absFilePath
      */
     public static void analyseOneJavaOrKotlinFileForSealedTokens(String absFilePath, boolean printTokens) {
