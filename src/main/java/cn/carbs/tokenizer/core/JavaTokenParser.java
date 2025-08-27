@@ -390,7 +390,7 @@ public class JavaTokenParser implements ITokenParser {
                             // 收 identifier
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             // 收 括号
-                            sCurrentToken.type = TokenType.Operator;
+                            sCurrentToken.type = TokenType.Parentheses;
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;

@@ -20,6 +20,8 @@ public enum TokenType {
     Comma,
     Colon,
     End,
+    ELExprStart,
+    ELExprEnd,
     NotExistTokenNewLine,
     Space
 }

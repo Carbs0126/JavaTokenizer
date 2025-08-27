@@ -6,7 +6,7 @@ public class Log {
 
     private static boolean SILENCE_ERROR = true;
 
-    private static final int MAX_ERROR_LOG_COUNT = 30;
+    private static final int MAX_ERROR_LOG_COUNT = Integer.MAX_VALUE;
 
     private static int sLogCount = 0;
 
@@ -15,7 +15,7 @@ public class Log {
             System.err.println("FILE NAME --> [" + fileName + "] ");
             System.err.println("PARSE ERROR --> [" + tag + "] " + message);
             sLogCount++;
-            if (sLogCount > MAX_ERROR_LOG_COUNT) {
+            if (sLogCount > MAX_ERROR_LOG_COUNT - 1) {
                 SILENCE_ERROR = false;
             }
         } else {
