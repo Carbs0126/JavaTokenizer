@@ -676,6 +676,7 @@ public class JavaTokenParser implements ITokenParser {
                         sCommentOrString = CommentOrString.MayStringStarter1;
                     } else {
                         sCommentOrString = CommentOrString.InString;
+                        sCurrentToken.type = TokenType.String;
                         if (isEscape(c)) {
                             // 当前字符为 /
                             sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_READY;
@@ -690,6 +691,7 @@ public class JavaTokenParser implements ITokenParser {
                     if (isStringSymbol(c)) {
                         // 连着三个 """
                         sCommentOrString = CommentOrString.InBlockString;
+                        sCurrentToken.type = TokenType.StringBlock;
                         // 字符串继续
                         sCurrentToken.appendLiteralChar(c);
                     } else {
