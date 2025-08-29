@@ -1,0 +1,37 @@
+1. `符号的使用：``之间可以是多数字符作为 identifier，如
+fun `test - function type - 0`() {
+}
+但是作为identifier时，不能有 / \ . > < ;
+下面这一行合法
+var `ddddddd #$%^&*()~sfafe` = 123;
+
+2. 字符串中(" " 或者 """ """)中的 `并不特殊
+// 下面一行，`作为字符串的一部分
+println("The variable name`$u.name` is ${name + "\n"},($aaa+$bbb)")
+
+// 下面一行，`作为identifier的一部分，不是字符串的一部分
+println("The variable name$`u`.name is ${name + "\n"},($aaa+$bbb)")
+
+3. 字符串中(包括 """ """ 和 " ")，$是有作用的，相当于简易的 ${} 只能解析后面紧跟着的一个变量，
+如果遇到.等不符合普通的identifier的字符，则停止解析，不符合规则的字符则作为字符串的一部分
+如下：
+println("""The variable name$u .name is ${name + "\n"},($aaa+$bbb)""")
+$u后面的空格是字符串的一部分
+
+字符串中的 $也可以跟` `实际上和后面跟变量一样原理，也可以直接把 带有 ``的identifier看做一整个 identifier
+
+    var `ddddddd #$%^&*()~ sfafe` = 456;
+    println("The variable name$`ddddddd #$%^&*()~ sfafe` is ${name + "\n"},($aaa+$bbb)")
+
+4. range .. 两个 .. 必须在同一行，不能换行
+
+ 可以
+    min..max 或者 min .. max 中间可以加空格
+
+ 可以
+    min
+    ..max
+
+ 可以
+    min..
+    max

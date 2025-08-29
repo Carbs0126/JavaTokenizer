@@ -7,6 +7,7 @@ public class Log {
     private static boolean SILENCE_ERROR = true;
 
     private static final int MAX_ERROR_LOG_COUNT = Integer.MAX_VALUE;
+//    private static final int MAX_ERROR_LOG_COUNT = 20;
 
     private static int sLogCount = 0;
 

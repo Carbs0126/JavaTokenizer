@@ -39,8 +39,6 @@ public class JavaTokenParser implements ITokenParser {
         int lineIndex = -1;
         for (String s : arrayList) {
             lineIndex++;
-            // print("line ->|" + (lineIndex + 1) + "|" + s);
-            // 人工添加一个 换行 token，便于打印
             int strLength = s.length();
             if (sCommentOrString == CommentOrString.InSlashComment) {
                 // 新的一行，跳出行注释
@@ -112,6 +110,9 @@ public class JavaTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             }
+                        } else {
+                            Log.e("package or import a", "sCommentOrString is " + sCommentOrString
+                                    + " current char : ->" + c + "<-, this char's int value is : " + ((int) c), absFileName);
                         }
                     } else if (codeSectionType == CodeSectionType.PackageSection) {
                         if (sCommentOrString == CommentOrString.None) {
@@ -159,6 +160,9 @@ public class JavaTokenParser implements ITokenParser {
                                 sCommentOrString = CommentOrString.InBlockComment;
                                 continue;
                             }
+                        } else {
+                            Log.e("package or import b", "sCommentOrString is " + sCommentOrString
+                                    + " current char : ->" + c + "<-, this char's int value is : " + ((int) c), absFileName);
                         }
                     } else if (codeSectionType == CodeSectionType.ImportSection) {
                         // 可能有注释
@@ -189,7 +193,7 @@ public class JavaTokenParser implements ITokenParser {
                                         importStrCache.setLength(6); // "import".length() == 6
                                     }
                                     continue;
-                                } else if (isLegalIdentifierPostfix(c) || isDot(c) || isStar(c)) {
+                                } else if (isLegalIdentifierPostfixForImportPath(c) || isDot(c) || isStar(c)) {
                                     importStrCache.append(c);
                                     continue;
                                 } else if (isExpressionEnd(c)) {
@@ -203,6 +207,11 @@ public class JavaTokenParser implements ITokenParser {
                                     continue;
                                 } else if (isCommentStarter(c)) {
                                     sCommentOrString = CommentOrString.MayCommentStarter;
+                                    continue;
+                                } else {
+                                    // TODO wang 出错？？
+                                    Log.e("package or import d", " current char : ->"
+                                            + c + "<-, this char's int value is : " + ((int) c), this.absFileName);
                                     continue;
                                 }
                             }
@@ -253,6 +262,7 @@ public class JavaTokenParser implements ITokenParser {
                 if (packageStr.length() > 0) {
                     tokens.add(SealedToken.genPackageToken(packageStr.substring(7))); // "package".length() == 7
                     tokens.add(SealedToken.genNewLineToken());
+                    packageStr.setLength(0);
                 }
                 for (String importStr : importStrArr) {
                     tokens.add(SealedToken.genImportToken(importStr.substring(6))); // "import".length() == 6
@@ -792,6 +802,34 @@ public class JavaTokenParser implements ITokenParser {
                     }
                 }
             }
+            // 换行时，identifier 和 number 类型应该收吗
+            if (sCurrentToken.type == TokenType.Identifier || sCurrentToken.type == TokenType.Number) {
+                collectTokenAndResetCache(tokens, sCurrentToken);
+            }
+            if (sCommentOrString == CommentOrString.MayStringStarter1) {
+                // 新的一行，那么之前的 "" 将作为一个字符串被收
+                // 上一个 空 string 结束了 ""
+                sCommentOrString = CommentOrString.None;
+                // 上一个是普通 string
+                sCurrentToken.type = TokenType.String;
+                collectTokenAndResetCache(tokens, sCurrentToken);
+            }
+        }
+
+        if (sCurrentToken.type != TokenType.None) {
+            collectTokenAndResetCache(tokens, sCurrentToken);
+        }
+
+        if (codeSectionType != CodeSectionType.ContentSection && tokens.size() == 0) {
+            if (packageStr.length() > 0) {
+                tokens.add(SealedToken.genPackageToken(packageStr.substring(7))); // "package".length() == 7
+                tokens.add(SealedToken.genNewLineToken());
+                packageStr.setLength(0);
+            }
+            for (String importStr : importStrArr) {
+                tokens.add(SealedToken.genImportToken(importStr.substring(6))); // "import".length() == 6
+                tokens.add(SealedToken.genNewLineToken());
+            }
         }
 
         return tokens;
@@ -816,6 +854,10 @@ public class JavaTokenParser implements ITokenParser {
 
     private static boolean isLegalIdentifierPostfix(char c) {
         return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || (c == '_') || (c == '$') || (c == '@') || (c == '\\');
+    }
+
+    private static boolean isLegalIdentifierPostfixForImportPath(char c) {
+        return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || (c == '_') || (c == '$') || (c == '\\');
     }
 
     private static boolean isParentheses(char c) {

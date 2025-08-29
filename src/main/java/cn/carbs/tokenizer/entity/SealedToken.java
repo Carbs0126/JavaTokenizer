@@ -53,4 +53,5 @@ public class SealedToken {
         sealedToken.type = TokenType.PackagePath;
         return sealedToken;
     }
+
 }

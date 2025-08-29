@@ -11,13 +11,13 @@ import cn.carbs.tokenizer.util.Log;
 
 import java.util.ArrayList;
 
-public class KotlinTokenParser implements ITokenParser {
+public class KotlinTokenParserBackup3 implements ITokenParser {
 
     private TokenCache sCurrentToken = new TokenCache();
     private CommentOrString sCommentOrString = CommentOrString.None;
     private String absFileName;
 
-    public KotlinTokenParser(String absFileName) {
+    public KotlinTokenParserBackup3(String absFileName) {
         this.absFileName = absFileName;
     }
 
@@ -218,6 +218,8 @@ public class KotlinTokenParser implements ITokenParser {
                                 preValidImportTokenType = TokenType.None;
                                 continue;
                             } else if (isLegalIdentifierPostfix(c) || isStar(c)) {
+                                // todo
+//                                if (preImportTokenType == TokenType.Space && preValidImportTokenType == TokenType.Identifier) {
                                 if (preImportTokenType == TokenType.Space) {
                                     if (preValidImportTokenType == TokenType.Identifier || preValidImportTokenType == TokenType.DotForIdentifier) {
                                         if ("import".equals(importStrCache.toString())) {
@@ -238,10 +240,7 @@ public class KotlinTokenParser implements ITokenParser {
                                                 preValidImportTokenType = TokenType.Identifier;
                                             } else {
                                                 // todo 这里为什么注释掉？
-                                                String importStrCacheStr = importStrCache.toString();
-                                                if (importStrCacheStr.startsWith("import")) {
-                                                    importStrArr.add(importStrCache.toString());
-                                                }
+                                                importStrArr.add(importStrCache.toString());
                                                 importStrCache.setLength(0);
                                                 codeSectionType = CodeSectionType.ContentSection;
                                                 preImportTokenType = TokenType.None;
@@ -257,14 +256,10 @@ public class KotlinTokenParser implements ITokenParser {
                                             preValidImportTokenType = TokenType.Identifier;
                                             importStrCache.append(c);
                                         } else {
-                                            // todo todo 蒙了
                                             if (c == 'i' && i < strLength - 1 && s.charAt(i + 1) == 'm') {
                                                 // 结束当前的import，进入下一个 import
                                                 // 前一个 import 回收
-                                                String importStrCacheStr = importStrCache.toString();
-                                                if (importStrCacheStr.startsWith("import")) {
-                                                    importStrArr.add(importStrCache.toString());
-                                                }
+                                                importStrArr.add(importStrCache.toString());
                                                 importStrCache.setLength(0);
 
                                                 importStrCache.append(c);
@@ -347,7 +342,7 @@ public class KotlinTokenParser implements ITokenParser {
                     tokens.add(SealedToken.genNewLineToken());
                 }
             }
-
+            // 上一行的identifier 还没收，先加了换行符了
             tokens.add(SealedToken.genNewLineToken());
 
             // 只有等到 sectionType == SectionType.ContentSection ，才会进入下面的代码中
@@ -378,12 +373,6 @@ public class KotlinTokenParser implements ITokenParser {
                             // 如果是合法的起始 identifier
                             sCurrentToken.type = TokenType.Identifier;
                             sCurrentToken.appendLiteralChar(c);
-                            if (isBackTick(c)) {
-                                // 进入 backtick identifier 模式
-                                sCurrentToken.extraInt = TokenCache.IN_IDENTIFIER_BACKTICK;
-                            } else {
-                                sCurrentToken.extraInt = TokenCache.IN_IDENTIFIER_STANDARD;
-                            }
                             continue;
                         } else if (isOperator(c)) {
                             // 每一个 operator 都回收
@@ -395,8 +384,7 @@ public class KotlinTokenParser implements ITokenParser {
                             collectParentheses(c, tokens, lineIndex, i);
                             continue;
                         } else if (isDot(c)) {
-                            // 只有一个 .
-                            sCurrentToken.type = TokenType.DotConfirmLaterForNone;
+                            sCurrentToken.type = TokenType.DotConfirmLater;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
                         } else if (isPureNumber(c)) {
@@ -431,100 +419,71 @@ public class KotlinTokenParser implements ITokenParser {
                             continue;
                         }
                     } else if (sCurrentToken.type == TokenType.Identifier) {
-                        if (sCurrentToken.extraInt == TokenCache.IN_IDENTIFIER_STANDARD) {
-                            if (isCommentStarter(c)) {
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                sCommentOrString = CommentOrString.MayCommentStarter;
-                                continue;
-                            } else if (isStringSymbol(c)) {
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                sCommentOrString = CommentOrString.MayStringStarter0;
-                                sCurrentToken.type = TokenType.String;
-                                sCurrentToken.extraInt = 0;
-                                sCurrentToken.appendLiteralChar(c);
-                                continue;
-                            } else if (isSpace(c)) {
-                                // identifier 确实应该回收，后续再分析一下 identifier 后面 + dot + identifier 的情况
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else if (isComma(c)) {
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                sCurrentToken.type = TokenType.Comma;
-                                sCurrentToken.appendLiteralChar(c);
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else if (isColon(c)) {
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                sCurrentToken.type = TokenType.Colon;
-                                sCurrentToken.appendLiteralChar(c);
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else if (isLegalIdentifierPostfix(c)) {
-                                sCurrentToken.appendLiteralChar(c);
-                                continue;
-                            } else if (isDot(c)) {
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                // 只有一个 .
-                                sCurrentToken.type = TokenType.DotConfirmLaterForNone;
-                                sCurrentToken.appendLiteralChar(c);
-//                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else if (isOperator(c)) {
-                                // 收 identifier
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                // 暂时不收 operator，有可能有多个连续operator字符
-                                sCurrentToken.type = TokenType.Operator;
-                                sCurrentToken.appendLiteralChar(c);
-                                // 每一个 operator 都回收
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else if (isParentheses(c)) {
-                                // 收 identifier
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                collectParentheses(c, tokens, lineIndex, i);
-                                continue;
-                            } else if (isExpressionEnd(c)) {
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                sCurrentToken.type = TokenType.End;
-                                sCurrentToken.appendLiteralChar(c);
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else if (isCharSymbol(c)) {
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                sCurrentToken.type = TokenType.Char;
-                                sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
-                                sCurrentToken.appendLiteralChar(c);
-                                continue;
-                            } else {
-                                Log.e("CommentOrString.None & TokenType.Identifier",
-                                        "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                                + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
-                                                + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
-                                continue;
-                            }
-                        } else if (sCurrentToken.extraInt == TokenCache.IN_IDENTIFIER_BACKTICK) {
-                            if (isBackTick(c)) {
-                                // identifier 明确终止
-                                sCurrentToken.appendLiteralChar(c);
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else {
-                                if (isLegalInBackTickIdentifier(c)) {
-                                    sCurrentToken.appendLiteralChar(c);
-                                    continue;
-                                } else {
-                                    Log.e("CommentOrString.None & TokenType.Identifier",
-                                            "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                                    + ", illegal char in backtick identifier"
-                                                    + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
-                                                    + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
-                                    continue;
-                                }
-                            }
+                        if (isCommentStarter(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCommentOrString = CommentOrString.MayCommentStarter;
+                            continue;
+                        } else if (isStringSymbol(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCommentOrString = CommentOrString.MayStringStarter0;
+                            sCurrentToken.type = TokenType.String;
+                            sCurrentToken.extraInt = 0;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isSpace(c)) {
+                            // identifier 确实应该回收，后续再分析一下 identifier 后面 + dot + identifier 的情况
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isComma(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Comma;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isColon(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Colon;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isLegalIdentifierPostfix(c)) {
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isDot(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.DotForIdentifier;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isOperator(c)) {
+                            // 收 identifier
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            // 暂时不收 operator，有可能有多个连续operator字符
+                            sCurrentToken.type = TokenType.Operator;
+                            sCurrentToken.appendLiteralChar(c);
+                            // 每一个 operator 都回收
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isParentheses(c)) {
+                            // 收 identifier
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            collectParentheses(c, tokens, lineIndex, i);
+                            continue;
+                        } else if (isExpressionEnd(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.End;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else if (isCharSymbol(c)) {
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            sCurrentToken.type = TokenType.Char;
+                            sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
                         } else {
                             Log.e("CommentOrString.None & TokenType.Identifier",
                                     "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                            + ", sCurrentToken.extraInt : " + sCurrentToken.extraInt
                                             + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
                                             + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
                             continue;
@@ -568,58 +527,8 @@ public class KotlinTokenParser implements ITokenParser {
                         } else if (isDot(c)) {
                             // todo wang
 //                            sCurrentToken.extraInt = TokenCache.IN_NUMBER_MODE;
-                            if (sCurrentToken.getLiteralLength() == 0) {
-                                Log.e("CommentOrString.None & TokenType.Number",
-                                        "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                                + ", token type is number, but length is 0"
-                                                + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
-                                                + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
-
-                                continue;
-                            }
-                            if (sCurrentToken.dotLocationIndexInNumber > -1) {
-                                // 说明已经有一个 . 了
-                                if (isDot(sCurrentToken.getLastChar())) {
-                                    // 检查这个 . 位于 number 的位置，如果是字符串最后一个
-                                    // 则说明这两个 .. 应该是 range
-                                    // 拿出最后一个 .
-                                    sCurrentToken.pop();
-//                                    String literStr = sCurrentToken.literalStr.toString();
-//                                    sCurrentToken.literalStr.setLength(0);
-//                                    sCurrentToken.appendLiteralStr(literStr.substring(0, literStr.length() - 1));
-                                    // 收上一个 number
-                                    collectTokenAndResetCache(tokens, sCurrentToken);
-                                    // 添加range类型
-                                    // todo wang
-                                    sCurrentToken.appendLiteralStr("..");
-                                    sCurrentToken.type = TokenType.DotForRange;
-                                    collectTokenAndResetCache(tokens, sCurrentToken);
-                                    continue;
-                                } else {
-                                    // float 后面也可以接 ..  比如 1.2..2.4
-                                    // 把前面的 1.2 收集起来
-                                    collectTokenAndResetCache(tokens, sCurrentToken);
-                                    // 把中间的 .. 之中的第一个 . 收集起来
-                                    // 只有一个 .
-                                    sCurrentToken.type = TokenType.DotConfirmLaterForNone;
-                                    sCurrentToken.appendLiteralChar(c);
-                                    continue;
-
-
-//                                    Log.e("CommentOrString.None & TokenType.Number",
-//                                            "line : " + (lineIndex + 1) + ", columnIndex : " + i
-//                                                    + ", two dots in a number"
-//                                                    + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
-//                                                    + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
-//                                    continue;
-                                }
-                            } else {
-                                // 如果后面是number，则type回到number
-                                sCurrentToken.type = TokenType.DotConfirmLaterForNumber;
-                                sCurrentToken.dotLocationIndexInNumber = sCurrentToken.getLiteralLength();
-                                sCurrentToken.appendLiteralChar(c);
-                                continue;
-                            }
+                            sCurrentToken.type = TokenType.DotConfirmLater;
+                            sCurrentToken.appendLiteralChar(c);
                         } else if (isLegalNumberPostfix(c)) {
                             // 继续
                             sCurrentToken.appendLiteralChar(c);
@@ -671,7 +580,7 @@ public class KotlinTokenParser implements ITokenParser {
                             // 3. 并继续string模式
                             continue;
                         }
-                    } else if (sCurrentToken.type == TokenType.DotConfirmLaterForNone) {
+                    } else if (sCurrentToken.type == TokenType.DotConfirmLater) {
                         // float x = . 9f; // 格式错误
                         // float x = .9f;  // 格式正确
                         if (isPureNumber(c)) {
@@ -679,117 +588,6 @@ public class KotlinTokenParser implements ITokenParser {
                             sCurrentToken.type = TokenType.Number;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
-                        } else if (isDot(c)) {
-                            // 连着两个 dot
-                            sCurrentToken.type = TokenType.DotForRange;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            continue;
-                        } else if (isComma(c)) {
-                            // 上一个是 number，并回收
-                            // todo wang 符合实际kotlin代码书写逻辑，
-                            sCurrentToken.type = TokenType.Number;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-
-                            // 当前是 ',' 回收
-                            sCurrentToken.type = TokenType.Comma;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            continue;
-                        } else if (isColon(c)) {
-                            // 上一个是 number，并回收
-                            // todo wang 符合实际kotlin代码书写逻辑，
-                            sCurrentToken.type = TokenType.Number;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-
-                            // 当前是 ':' 回收
-                            sCurrentToken.type = TokenType.Colon;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            continue;
-                        } else if (isSpace(c)) {
-                            sCurrentToken.type = TokenType.DotForIdentifier;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            // 当前 c == space，因此略过
-                            continue;
-                        } else if (isLegalIdentifierStarter(c)) {
-                            // 如果是合法的起始 identifier
-                            // ddddddddddddd
-                            sCurrentToken.type = TokenType.DotForIdentifier;
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-
-                            sCurrentToken.type = TokenType.Identifier;
-                            sCurrentToken.appendLiteralChar(c);
-                            if (isBackTick(c)) {
-                                // 进入 backtick identifier 模式
-                                sCurrentToken.extraInt = TokenCache.IN_IDENTIFIER_BACKTICK;
-                            } else {
-                                sCurrentToken.extraInt = TokenCache.IN_IDENTIFIER_STANDARD;
-                            }
-                            continue;
-                        } else {
-                            // 前面的 dot 按照 DotForIdentifier 处理
-                            sCurrentToken.type = TokenType.DotForIdentifier;
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-
-                            // 处理当前字符，前一个字符是 .
-                            if (isCommentStarter(c)) {
-                                sCommentOrString = CommentOrString.MayCommentStarter;
-                                continue;
-                            } else if (isOperator(c)) {
-                                // 每一个 operator 都回收
-                                sCurrentToken.type = TokenType.Operator;
-                                sCurrentToken.appendLiteralChar(c);
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else if (isParentheses(c)) {
-                                collectParentheses(c, tokens, lineIndex, i);
-                                continue;
-                            } else if (isExpressionEnd(c)) {
-                                sCurrentToken.type = TokenType.End;
-                                sCurrentToken.appendLiteralChar(c);
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else {
-                                Log.e("CommentOrString.None & TokenType.DotConfirmLater",
-                                        "else, line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                                + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
-                                                + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
-                                continue;
-                            }
-                        }
-                    }
-
-                    else if (sCurrentToken.type == TokenType.DotConfirmLaterForNumber) {
-                        // float x = 1. 9f; // 格式错误
-                        // float x = 1.9f;  // 格式正确
-                        if (isPureNumber(c)) {
-                            // 前面的 dot 按照 DotForNumber 处理
-                            sCurrentToken.type = TokenType.Number;
-                            sCurrentToken.appendLiteralChar(c);
-                            continue;
-                        } else if (isDot(c)) {
-                            // 收 前一个 number
-                            sCurrentToken.type = TokenType.Number;
-                            if (sCurrentToken.getLiteralLength() == 0) {
-                                Log.e("CommentOrString.None & TokenType.DotConfirmLaterForNumber",
-                                        "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                                + ", token type is number, but length is 0"
-                                                + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
-                                                + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
-
-                                continue;
-                            }
-                            sCurrentToken.pop();
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            // 连着两个 dot
-                            sCurrentToken.type = TokenType.DotForRange;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            continue;
                         } else if (isComma(c)) {
                             // 上一个是 number，并回收
                             sCurrentToken.type = TokenType.Number;
@@ -812,187 +610,69 @@ public class KotlinTokenParser implements ITokenParser {
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
-                        } else if (isSpace(c)) {
-                            // number以 . 结束，点代表identifier
-                            // var x = 1. dec()
-                            sCurrentToken.type = TokenType.Number;
-                            if (sCurrentToken.getLiteralLength() > 0) {
-                                // 把前面的 . 去掉
-                                sCurrentToken.pop();
+                        } else if (isCharSymbol(c)) {
+//                            if (sCurrentToken.extraInt == TokenCache.IN_RANGE_MODE) {
+                            if (false) {
+
+                                sCurrentToken.type = TokenType.DotForRange;
+                                collectTokenAndResetCache(tokens, sCurrentToken);
+
+                                sCurrentToken.type = TokenType.Char;
+                                sCurrentToken.appendLiteralChar(c);
+                                continue;
+                            } else {
+                                // 可能出错
+                                Log.e("CommentOrString.None & TokenType.DotConfirmLater",
+                                        "isCharSymbol(), line : " + (lineIndex + 1) + ", columnIndex : " + i
+                                                + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                                + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
+
                             }
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            // 把 . 作为一个 token
-                            sCurrentToken.type = TokenType.DotForIdentifier;
-                            sCurrentToken.appendLiteralChar('.');
-                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        }
+                        // 前面的 dot 按照 DotForIdentifier 处理
+                        sCurrentToken.type = TokenType.DotForIdentifier;
+                        collectTokenAndResetCache(tokens, sCurrentToken);
+                        // 处理当前字符，前一个字符是 .
+                        if (isCommentStarter(c)) {
+                            sCommentOrString = CommentOrString.MayCommentStarter;
+                            continue;
+                        } else if (isSpace(c)) {
+                            // 如果是空白，继续前进
                             continue;
                         } else if (isLegalIdentifierStarter(c)) {
                             // 如果是合法的起始 identifier
-                            // var x = 1.dec()
-                            sCurrentToken.type = TokenType.Number;
-                            if (sCurrentToken.getLiteralLength() > 0) {
-                                // 把前面的 . 去掉
-                                sCurrentToken.pop();
-                            }
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            // 把 . 作为一个 token
-                            sCurrentToken.type = TokenType.DotForIdentifier;
-                            sCurrentToken.appendLiteralChar('.');
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-                            // var x = 1.dec() 从 d 开始收集，作为identifier
                             sCurrentToken.type = TokenType.Identifier;
                             sCurrentToken.appendLiteralChar(c);
-                            if (isBackTick(c)) {
-                                // 进入 backtick identifier 模式
-                                sCurrentToken.extraInt = TokenCache.IN_IDENTIFIER_BACKTICK;
-                            } else {
-                                sCurrentToken.extraInt = TokenCache.IN_IDENTIFIER_STANDARD;
-                            }
                             continue;
-                        } else {
-                            // 前面的 dot 按照 DotForIdentifier 处理
-                            sCurrentToken.type = TokenType.Number;
-                            if (sCurrentToken.getLiteralLength() > 0) {
-                                // 把前面的 . 去掉
-                                sCurrentToken.pop();
-                            }
+                        } else if (isOperator(c)) {
+                            // 每一个 operator 都回收
+                            sCurrentToken.type = TokenType.Operator;
+                            sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
-
-                            sCurrentToken.type = TokenType.DotForIdentifier;
-                            sCurrentToken.appendLiteralChar('.');
-                            collectTokenAndResetCache(tokens, sCurrentToken);
-
-                            // 处理当前字符，前一个字符是 .
-                            if (isCommentStarter(c)) {
-                                sCurrentToken.type = TokenType.None;
-                                sCommentOrString = CommentOrString.MayCommentStarter;
-                                continue;
-                            } else if (isOperator(c)) {
-                                // 每一个 operator 都回收
-                                sCurrentToken.type = TokenType.Operator;
-                                sCurrentToken.appendLiteralChar(c);
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else if (isParentheses(c)) {
-                                collectParentheses(c, tokens, lineIndex, i);
-                                continue;
-                            } else if (isExpressionEnd(c)) {
-                                sCurrentToken.type = TokenType.End;
-                                sCurrentToken.appendLiteralChar(c);
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else {
-                                Log.e("CommentOrString.None & TokenType.DotConfirmLater",
-                                        "else, line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                                + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
-                                                + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
-                                continue;
-                            }
-                        }
-                    }
-
-//                    else if (sCurrentToken.type == TokenType.DotConfirmLater) {
-//                        // float x = . 9f; // 格式错误
-//                        // float x = .9f;  // 格式正确
-//                        if (isPureNumber(c)) {
-//                            // 前面的 dot 按照 DotForNumber 处理
-//                            sCurrentToken.type = TokenType.Number;
-//                            sCurrentToken.appendLiteralChar(c);
-//                            continue;
-//                        } else if (isComma(c)) {
-//                            // 上一个是 number，并回收
-//                            sCurrentToken.type = TokenType.Number;
-//                            sCurrentToken.appendLiteralChar(c);
-//                            collectTokenAndResetCache(tokens, sCurrentToken);
-//
-//                            // 当前是 ',' 回收
-//                            sCurrentToken.type = TokenType.Comma;
-//                            sCurrentToken.appendLiteralChar(c);
-//                            collectTokenAndResetCache(tokens, sCurrentToken);
-//                            continue;
-//                        } else if (isColon(c)) {
-//                            // 上一个是 number，并回收
-//                            sCurrentToken.type = TokenType.Number;
-//                            sCurrentToken.appendLiteralChar(c);
-//                            collectTokenAndResetCache(tokens, sCurrentToken);
-//
-//                            // 当前是 ':' 回收
-//                            sCurrentToken.type = TokenType.Colon;
-//                            sCurrentToken.appendLiteralChar(c);
-//                            collectTokenAndResetCache(tokens, sCurrentToken);
-//                            continue;
-//                        } else if (isSpace(c)) {
-//                            // dot前面那个需要记录，前面那个有可能是 char 、identifier、number
-//                        } else if (isCharSymbol(c)) {
-//                            // todo wang range 修改
-////                            if (sCurrentToken.extraInt == TokenCache.IN_RANGE_MODE) {
-////
-////                                sCurrentToken.type = TokenType.DotForRange;
-////                                collectTokenAndResetCache(tokens, sCurrentToken);
-////
-////                                sCurrentToken.type = TokenType.Char;
-////                                sCurrentToken.appendLiteralChar(c);
-////                                continue;
-////                            } else {
-//                            // 可能出错
-//                            Log.e("CommentOrString.None & TokenType.DotConfirmLater",
-//                                    "isCharSymbol(), line : " + (lineIndex + 1) + ", columnIndex : " + i
-//                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
-//                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
-//
-////                            }
-//                            continue;
-//                        }
-//                        // 前面的 dot 按照 DotForIdentifier 处理
-//                        sCurrentToken.type = TokenType.DotForIdentifier;
-//                        collectTokenAndResetCache(tokens, sCurrentToken);
-//                        // 处理当前字符，前一个字符是 .
-//                        if (isCommentStarter(c)) {
-//                            sCommentOrString = CommentOrString.MayCommentStarter;
-//                            continue;
-//                        } else if (isSpace(c)) {
-//                            // 如果是空白，继续前进
-//                            continue;
-//                        } else if (isLegalIdentifierStarter(c)) {
-//                            // 如果是合法的起始 identifier
-//                            sCurrentToken.type = TokenType.Identifier;
-//                            sCurrentToken.appendLiteralChar(c);
-//                            if (isBackTick(c)) {
-//                                // 进入 backtick identifier 模式
-//                                sCurrentToken.extraInt = TokenCache.IN_IDENTIFIER_BACKTICK;
-//                            } else {
-//                                sCurrentToken.extraInt = TokenCache.IN_IDENTIFIER_STANDARD;
-//                            }
-//                            continue;
-//                        } else if (isOperator(c)) {
-//                            // 每一个 operator 都回收
-//                            sCurrentToken.type = TokenType.Operator;
-//                            sCurrentToken.appendLiteralChar(c);
-//                            collectTokenAndResetCache(tokens, sCurrentToken);
-//                            continue;
-//                        } else if (isParentheses(c)) {
-//                            collectParentheses(c, tokens, lineIndex, i);
-//                            continue;
-//                        } else if (isDot(c)) {
-//                            // todo wang
+                            continue;
+                        } else if (isParentheses(c)) {
+                            collectParentheses(c, tokens, lineIndex, i);
+                            continue;
+                        } else if (isDot(c)) {
+                            // todo wang
 //                            sCurrentToken.extraInt = TokenCache.IN_RANGE_MODE;
-//                            sCurrentToken.type = TokenType.DotConfirmLater;
-//                            sCurrentToken.appendLiteralChar(c);
-//                            continue;
-//                        } else if (isExpressionEnd(c)) {
-//                            sCurrentToken.type = TokenType.End;
-//                            sCurrentToken.appendLiteralChar(c);
-//                            collectTokenAndResetCache(tokens, sCurrentToken);
-//                            continue;
-//                        } else {
-//                            Log.e("CommentOrString.None & TokenType.DotConfirmLater",
-//                                    "else, line : " + (lineIndex + 1) + ", columnIndex : " + i
-//                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
-//                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
-//                            continue;
-//                        }
-//                    }
-                    else {
+                            sCurrentToken.type = TokenType.DotConfirmLater;
+                            sCurrentToken.appendLiteralChar(c);
+                            continue;
+                        } else if (isExpressionEnd(c)) {
+                            sCurrentToken.type = TokenType.End;
+                            sCurrentToken.appendLiteralChar(c);
+                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            continue;
+                        } else {
+                            Log.e("CommentOrString.None & TokenType.DotConfirmLater",
+                                    "else, line : " + (lineIndex + 1) + ", columnIndex : " + i
+                                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
+                            continue;
+                        }
+                    } else {
                         // curToken.type == TokenType.Operator 这种情况不存在，因为 每次遇到 operator 都会回收并重置
                         Log.e("CommentOrString.None & TokenType else",
                                 "line : " + (lineIndex + 1) + ", columnIndex : " + i
@@ -1031,12 +711,6 @@ public class KotlinTokenParser implements ITokenParser {
                             // 如果是合法的起始 identifier
                             sCurrentToken.type = TokenType.Identifier;
                             sCurrentToken.appendLiteralChar(c);
-                            if (isBackTick(c)) {
-                                // 进入 backtick identifier 模式
-                                sCurrentToken.extraInt = TokenCache.IN_IDENTIFIER_BACKTICK;
-                            } else {
-                                sCurrentToken.extraInt = TokenCache.IN_IDENTIFIER_STANDARD;
-                            }
                             continue;
                         } else if (isOperator(c)) {
                             // 每一个 operator 都回收
@@ -1121,19 +795,8 @@ public class KotlinTokenParser implements ITokenParser {
                         // 上一个是普通 string
                         sCurrentToken.type = TokenType.String;
                         collectTokenAndResetCache(tokens, sCurrentToken);
-                        // todo wang 哈哈哈发现问题
                         // 把当前的字符收进去
-                        if (isELExpConcern(c)) {
-                            if (isDollar(c)) {
-                                // todo 暂时不考虑这里，string结束后，暂时没发现紧靠着 $ 的情况
-                                sCurrentToken.appendLiteralChar(c);
-                            } else {
-                                // 左右 brace
-                                collectParentheses(c, tokens, lineIndex, i);
-                            }
-                        } else {
-                            sCurrentToken.appendLiteralChar(c);
-                        }
+                        sCurrentToken.appendLiteralChar(c);
                     }
                     continue;
                 } else if (sCommentOrString == CommentOrString.InString) {
@@ -1159,10 +822,9 @@ public class KotlinTokenParser implements ITokenParser {
                                     sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_NONE;
                                     // 收起之前的 token 作为 string
                                     // todo wang
-//                                    String strBeforeDollar = sCurrentToken.literalStr.substring(0, sCurrentToken.literalStr.length() - 1);
-//                                    sCurrentToken.literalStr.setLength(0);
-//                                    sCurrentToken.appendLiteralStr(strBeforeDollar);
-                                    sCurrentToken.pop();
+                                    String strBeforeDollar = sCurrentToken.literalStr.substring(0, sCurrentToken.literalStr.length() - 1);
+                                    sCurrentToken.literalStr.setLength(0);
+                                    sCurrentToken.literalStr.append(strBeforeDollar);
                                     // 此时没有右侧 "
                                     collectTokenAndResetCache(tokens, sCurrentToken);
                                     sCurrentToken.type = TokenType.ELExprStart;
@@ -1216,10 +878,9 @@ public class KotlinTokenParser implements ITokenParser {
                                 sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_NONE;
                                 // 收起之前的 token 作为 string
                                 // todo wang
-//                                String strBeforeDollar = sCurrentToken.literalStr.substring(0, sCurrentToken.literalStr.length() - 1);
-//                                sCurrentToken.literalStr.setLength(0);
-//                                sCurrentToken.appendLiteralStr(strBeforeDollar);
-                                sCurrentToken.pop();
+                                String strBeforeDollar = sCurrentToken.literalStr.substring(0, sCurrentToken.literalStr.length() - 1);
+                                sCurrentToken.literalStr.setLength(0);
+                                sCurrentToken.literalStr.append(strBeforeDollar);
                                 // 此时没有右侧 "
                                 collectTokenAndResetCache(tokens, sCurrentToken);
                                 sCurrentToken.type = TokenType.ELExprStart;
@@ -1274,14 +935,6 @@ public class KotlinTokenParser implements ITokenParser {
             }
             // 换行时，identifier 和 number 类型应该收吗
             if (sCurrentToken.type == TokenType.Identifier || sCurrentToken.type == TokenType.Number) {
-                collectTokenAndResetCache(tokens, sCurrentToken);
-            }
-            if (sCommentOrString == CommentOrString.MayStringStarter1) {
-                // 新的一行，那么之前的 "" 将作为一个字符串被收
-                // 上一个 空 string 结束了 ""
-                sCommentOrString = CommentOrString.None;
-                // 上一个是普通 string
-                sCurrentToken.type = TokenType.String;
                 collectTokenAndResetCache(tokens, sCurrentToken);
             }
         }
@@ -1376,15 +1029,6 @@ public class KotlinTokenParser implements ITokenParser {
         }
     }
 
-    // 哈哈哈
-    // todo dollar 也要写
-    private boolean isELExpConcern(char c) {
-        if (isLeftBrace(c) || isRightBrace(c) || isDollar(c)) {
-            return true;
-        }
-        return false;
-    }
-
     private static void collectTokenAndResetCache(ArrayList<SealedToken> tokens, TokenCache tokenCache) {
         SealedToken sealedToken = tokenCache.sealAndReset();
         tokens.add(sealedToken);
@@ -1411,10 +1055,6 @@ public class KotlinTokenParser implements ITokenParser {
             return true;
         }
         return false;
-    }
-
-    private static boolean isBackTick(char c) {
-        return c == '`';
     }
 
     private static boolean isDot(char c) {
@@ -1492,19 +1132,6 @@ public class KotlinTokenParser implements ITokenParser {
             return true;
         }
         return false;
-    }
-
-    /**
-     * / \ . > < ; : [] 这几个不能用
-     *
-     * @param c
-     * @return
-     */
-    private static boolean isLegalInBackTickIdentifier(char c) {
-        if (c == '.' || c == ';' || c == '/' || c == '\\' || c == '<' || c == '>' || c == '[' || c == ']') {
-            return false;
-        }
-        return true;
     }
 
     private static boolean isCharSymbol(char c) {

@@ -12,13 +12,13 @@ import cn.carbs.tokenizer.util.Log;
 import java.util.ArrayList;
 
 //
-public class KotlinTokenParserBackup implements ITokenParser {
+public class KotlinTokenParserBackup2 implements ITokenParser {
 
     private TokenCache sCurrentToken = new TokenCache();
     private CommentOrString sCommentOrString = CommentOrString.None;
     private String absFileName;
 
-    public KotlinTokenParserBackup(String absFileName) {
+    public KotlinTokenParserBackup2(String absFileName) {
         this.absFileName = absFileName;
     }
 
@@ -207,6 +207,7 @@ public class KotlinTokenParserBackup implements ITokenParser {
                     } else if (codeSectionType == CodeSectionType.ImportSection) {
                         // 可能有注释
                         if (sCommentOrString == CommentOrString.None) {
+                            // TODO 这里不完善，有可能会有问题，比如进入
                             if (isSpace(c)) {
                                 preImportTokenType = TokenType.Space;
                                 continue;
@@ -223,31 +224,62 @@ public class KotlinTokenParserBackup implements ITokenParser {
                                 preValidImportTokenType = TokenType.None;
                                 continue;
                             } else if (isLegalIdentifierPostfix(c) || isStar(c)) {
+                                // todo
                                 if (preImportTokenType == TokenType.Space && preValidImportTokenType == TokenType.Identifier) {
-                                    // 直接进入import
-                                    if ("import".equals(importStrCache.toString())) {
-                                        // 继续解析
-                                        preImportTokenType = TokenType.Identifier;
-                                        preValidImportTokenType = TokenType.Identifier;
-                                        importStrCache.append(c);
-                                    } else {
-                                        if (c == 'i' && i < strLength - 1 && s.charAt(i + 1) == 'm') {
-                                            // 结束当前的import，进入下一个 import
-                                            // 前一个 import 回收
-                                            importStrArr.add(importStrCache.toString());
-                                            importStrCache.setLength(0);
-
-                                            importStrCache.append(c);
-                                            importState = ImportState.Processing;
+//                                if (preImportTokenType == TokenType.Space) {
+                                    if (preValidImportTokenType == TokenType.Identifier || preValidImportTokenType == TokenType.DotForIdentifier) {
+                                        if ("import".equals(importStrCache.toString())) {
+                                            // 继续解析
                                             preImportTokenType = TokenType.Identifier;
                                             preValidImportTokenType = TokenType.Identifier;
+                                            importStrCache.append(c);
                                         } else {
+                                            if (c == 'i' && i < strLength - 1 && s.charAt(i + 1) == 'm') {
+                                                // 结束当前的import，进入下一个 import
+                                                // 前一个 import 回收
+                                                importStrArr.add(importStrCache.toString());
+                                                importStrCache.setLength(0);
+
+                                                importStrCache.append(c);
+                                                importState = ImportState.Processing;
+                                                preImportTokenType = TokenType.Identifier;
+                                                preValidImportTokenType = TokenType.Identifier;
+                                            } else {
+                                                // todo 这里为什么注释掉？
+                                                importStrArr.add(importStrCache.toString());
+                                                importStrCache.setLength(0);
+                                                codeSectionType = CodeSectionType.ContentSection;
+                                                preImportTokenType = TokenType.None;
+                                                preValidImportTokenType = TokenType.None;
+                                                penetratePackageAndImportSectionState = 1;
+                                            }
+                                        }
+                                    } else if (preValidImportTokenType == TokenType.None) {
+                                        // 没有 import，直接就是注释
+                                        if ("import".equals(importStrCache.toString())) {
+                                            // 继续解析
+                                            preImportTokenType = TokenType.Identifier;
+                                            preValidImportTokenType = TokenType.Identifier;
+                                            importStrCache.append(c);
+                                        } else {
+                                            if (c == 'i' && i < strLength - 1 && s.charAt(i + 1) == 'm') {
+                                                // 结束当前的import，进入下一个 import
+                                                // 前一个 import 回收
+                                                importStrArr.add(importStrCache.toString());
+                                                importStrCache.setLength(0);
+
+                                                importStrCache.append(c);
+                                                importState = ImportState.Processing;
+                                                preImportTokenType = TokenType.Identifier;
+                                                preValidImportTokenType = TokenType.Identifier;
+                                            } else {
 //                                            importStrArr.add(importStrCache.toString());
-                                            importStrCache.setLength(0);
-                                            codeSectionType = CodeSectionType.ContentSection;
-                                            preImportTokenType = TokenType.None;
-                                            preValidImportTokenType = TokenType.None;
-                                            penetratePackageAndImportSectionState = 1;
+                                                importStrCache.setLength(0);
+                                                codeSectionType = CodeSectionType.ContentSection;
+                                                preImportTokenType = TokenType.None;
+                                                preValidImportTokenType = TokenType.None;
+                                                penetratePackageAndImportSectionState = 1;
+                                            }
                                         }
                                     }
                                     continue;
@@ -316,7 +348,7 @@ public class KotlinTokenParserBackup implements ITokenParser {
                     tokens.add(SealedToken.genNewLineToken());
                 }
             }
-
+            // 上一行的identifier 还没收，先加了换行符了
             tokens.add(SealedToken.genNewLineToken());
 
             // 只有等到 sectionType == SectionType.ContentSection ，才会进入下面的代码中
@@ -355,120 +387,8 @@ public class KotlinTokenParserBackup implements ITokenParser {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isParentheses(c)) {
-                            // todo
-                            if (sCurrentToken.elLayer == 0) {
-                                // 如果当前不在 el 表达式中
-                                sCurrentToken.type = TokenType.Parentheses;
-                                sCurrentToken.appendLiteralChar(c);
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            } else if (sCurrentToken.elLayer > 0) {
-                                // 如果是在 el 表达式中
-                                if (isLeftBrace(c)) {
-                                    // leftBrace 必然不会抵消，el 表达式还会继续
-                                    // TODO 下面一行后续删除
-//                                    sCurrentToken.elNetLeftBraceCount++;
-
-                                    sCurrentToken.pushBrace(false, Brace.DIRECTION_LEFT);
-                                    sCurrentToken.type = TokenType.Parentheses;
-                                    sCurrentToken.appendLiteralChar(c);
-                                    collectTokenAndResetCache(tokens, sCurrentToken);
-                                    continue;
-                                } else if (isRightBrace(c)) {
-                                    // TODO 下面一行后续删除
-//                                    sCurrentToken.elNetLeftBraceCount--;
-                                    sCurrentToken.pushBrace(false, Brace.DIRECTION_RIGHT);
-                                    // text
-                                    int operateResult = sCurrentToken.operateLastTwoBracesResult().result;
-                                    if (operateResult == Brace.PAIR_RESULT_YES) {
-                                        // 收集 token，sCurrentToken.elBraceArr 已经在 operateLastTwoBracesResult() 内部做改变了
-                                        sCurrentToken.type = TokenType.Parentheses;
-                                        sCurrentToken.appendLiteralChar(c);
-                                        collectTokenAndResetCache(tokens, sCurrentToken);
-                                        continue;
-                                    } else if (operateResult == Brace.PAIR_RESULT_NO) {
-                                        // 收集 token
-                                        sCurrentToken.type = TokenType.Parentheses;
-                                        sCurrentToken.appendLiteralChar(c);
-                                        collectTokenAndResetCache(tokens, sCurrentToken);
-                                        continue;
-                                    } else if (operateResult == Brace.PAIR_RESULT_EL_END) {
-                                        // 当前elLayer 的 el表达式结束了
-                                        // 进入 字符串模式
-                                        sCurrentToken.type = TokenType.ELExprEnd;
-                                        sCurrentToken.appendLiteralChar(c);
-                                        collectTokenAndResetCache(tokens, sCurrentToken);
-
-                                        sCurrentToken.elLayer--;
-
-                                        if (sCurrentToken.elCapsuleStringType == TokenCache.EL_CAPSULE_IN_STRING) {
-                                            // string 收尾的时候需要把这个 partOfEL 改为 false
-//                                            sCurrentToken.partOfEL = true;
-                                            sCurrentToken.type = TokenType.String;
-                                            sCommentOrString = CommentOrString.InString;
-                                        } else {
-//                                            sCurrentToken.partOfEL = true;
-                                            sCurrentToken.type = TokenType.StringBlock;
-                                            sCommentOrString = CommentOrString.InBlockString;
-                                        }
-                                    }
-                                } else {
-                                    sCurrentToken.type = TokenType.Parentheses;
-                                    sCurrentToken.appendLiteralChar(c);
-                                    collectTokenAndResetCache(tokens, sCurrentToken);
-                                    continue;
-                                }
-                            } else {
-                                Log.e("elLayer < 0",
-                                        "line : " + (lineIndex + 1) + ", columnIndex : " + i
-                                                + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
-                                                + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
-
-                                throw new IllegalArgumentException("elLayer < 0, " + sCurrentToken.elLayer);
-                            }
-                            /*
-                            if (sCurrentToken.elExpState == TokenCache.EL_IN_EXPRESSION) {
-                                // 如果是在 el 表达式中
-                                if (isLeftBrace(c)) {
-                                    sCurrentToken.elNetLeftBraceCount++;
-                                    sCurrentToken.type = TokenType.Parentheses;
-                                    sCurrentToken.appendLiteralChar(c);
-                                    collectTokenAndResetCache(tokens, sCurrentToken);
-                                    continue;
-                                } else if (isRightBrace(c)) {
-                                    sCurrentToken.elNetLeftBraceCount--;
-                                    if (sCurrentToken.elNetLeftBraceCount < 0) {
-                                        // {} 成对出现，说明el表达式结束了
-                                        sCurrentToken.elExpState = TokenCache.EL_NONE;
-                                        // 进入 字符串模式
-                                        sCurrentToken.type = TokenType.ELExprEnd;
-                                        sCurrentToken.appendLiteralChar(c);
-                                        collectTokenAndResetCache(tokens, sCurrentToken);
-                                        // todo 需要记录一下之前是 string 还是 string block
-                                        if (sCurrentToken.elExpInStringType == TokenCache.EL_EXP_IN_STRING) {
-                                            // string 收尾的时候需要把这个 partOfEL 改为 false
-//                                            sCurrentToken.partOfEL = true;
-                                            sCurrentToken.type = TokenType.String;
-                                            sCommentOrString = CommentOrString.InString;
-                                        } else {
-//                                            sCurrentToken.partOfEL = true;
-                                            sCurrentToken.type = TokenType.StringBlock;
-                                            sCommentOrString = CommentOrString.InBlockString;
-                                        }
-                                        continue;
-                                    } else {
-                                        sCurrentToken.type = TokenType.Parentheses;
-                                        sCurrentToken.appendLiteralChar(c);
-                                        collectTokenAndResetCache(tokens, sCurrentToken);
-                                        continue;
-                                    }
-                                }
-                            } else {
-                                sCurrentToken.type = TokenType.Parentheses;
-                                sCurrentToken.appendLiteralChar(c);
-                                collectTokenAndResetCache(tokens, sCurrentToken);
-                                continue;
-                            }*/
+                            collectParentheses(c, tokens, lineIndex, i);
+                            continue;
                         } else if (isDot(c)) {
                             sCurrentToken.type = TokenType.DotConfirmLater;
                             sCurrentToken.appendLiteralChar(c);
@@ -553,10 +473,7 @@ public class KotlinTokenParserBackup implements ITokenParser {
                         } else if (isParentheses(c)) {
                             // 收 identifier
                             collectTokenAndResetCache(tokens, sCurrentToken);
-                            // 收 括号
-                            sCurrentToken.type = TokenType.Operator;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            collectParentheses(c, tokens, lineIndex, i);
                             continue;
                         } else if (isExpressionEnd(c)) {
                             collectTokenAndResetCache(tokens, sCurrentToken);
@@ -615,7 +532,7 @@ public class KotlinTokenParserBackup implements ITokenParser {
                             continue;
                         } else if (isDot(c)) {
                             // todo wang
-                            sCurrentToken.extraInt = TokenCache.IN_NUMBER_MODE;
+//                            sCurrentToken.extraInt = TokenCache.IN_NUMBER_MODE;
                             sCurrentToken.type = TokenType.DotConfirmLater;
                             sCurrentToken.appendLiteralChar(c);
                         } else if (isLegalNumberPostfix(c)) {
@@ -625,9 +542,7 @@ public class KotlinTokenParserBackup implements ITokenParser {
                         } else if (isParentheses(c)) {
                             // 收 number
                             collectTokenAndResetCache(tokens, sCurrentToken);
-                            sCurrentToken.type = TokenType.Parentheses;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            collectParentheses(c, tokens, lineIndex, i);
                             continue;
                         } else if (isExpressionEnd(c)) {
                             // 收 number
@@ -702,8 +617,8 @@ public class KotlinTokenParserBackup implements ITokenParser {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isCharSymbol(c)) {
-                            if (sCurrentToken.extraInt == TokenCache.IN_RANGE_MODE) {
-
+//                            if (sCurrentToken.extraInt == TokenCache.IN_RANGE_MODE) {
+                            if (false) {
                                 sCurrentToken.type = TokenType.DotForRange;
                                 collectTokenAndResetCache(tokens, sCurrentToken);
 
@@ -742,13 +657,11 @@ public class KotlinTokenParserBackup implements ITokenParser {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isParentheses(c)) {
-                            sCurrentToken.type = TokenType.Parentheses;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            collectParentheses(c, tokens, lineIndex, i);
                             continue;
                         } else if (isDot(c)) {
                             // todo wang
-                            sCurrentToken.extraInt = TokenCache.IN_RANGE_MODE;
+//                            sCurrentToken.extraInt = TokenCache.IN_RANGE_MODE;
                             sCurrentToken.type = TokenType.DotConfirmLater;
                             sCurrentToken.appendLiteralChar(c);
                             continue;
@@ -811,9 +724,7 @@ public class KotlinTokenParserBackup implements ITokenParser {
                             collectTokenAndResetCache(tokens, sCurrentToken);
                             continue;
                         } else if (isParentheses(c)) {
-                            sCurrentToken.type = TokenType.Parentheses;
-                            sCurrentToken.appendLiteralChar(c);
-                            collectTokenAndResetCache(tokens, sCurrentToken);
+                            collectParentheses(c, tokens, lineIndex, i);
                             continue;
                         } else if (isPureNumber(c) || isDot(c)) {
                             sCurrentToken.type = TokenType.Number;
@@ -857,6 +768,7 @@ public class KotlinTokenParserBackup implements ITokenParser {
                         sCommentOrString = CommentOrString.MayStringStarter1;
                     } else {
                         sCommentOrString = CommentOrString.InString;
+                        sCurrentToken.type = TokenType.String;
                         if (isEscape(c)) {
                             // 当前字符为 /
                             sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_READY;
@@ -867,9 +779,9 @@ public class KotlinTokenParserBackup implements ITokenParser {
                         // string中的第一个字符，之前不可能转义
                         if (isDollar(c)) {
                             // 可能是 el 表达式开始，当判断到el表达式时，再进行截取
-                            sCurrentToken.elExpState = TokenCache.EL_MAY_START;
+                            sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_MAY_START;
                         } else {
-                            sCurrentToken.elExpState = TokenCache.EL_NONE;
+                            sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_NONE;
                         }
                     }
                     // 字符串继续
@@ -879,6 +791,7 @@ public class KotlinTokenParserBackup implements ITokenParser {
                     if (isStringSymbol(c)) {
                         // 连着三个 """
                         sCommentOrString = CommentOrString.InBlockString;
+                        sCurrentToken.type = TokenType.StringBlock;
                         // 字符串继续
                         sCurrentToken.appendLiteralChar(c);
                     } else {
@@ -894,13 +807,11 @@ public class KotlinTokenParserBackup implements ITokenParser {
                 } else if (sCommentOrString == CommentOrString.InString) {
                     if (sCurrentToken.extraInt == TokenCache.IN_STRING_MODE_ESCAPE_IDLE) {
                         // 前一个字符不是 escape 转义字符
-
                         if (isStringSymbol(c)) {
                             // 当前字符为 " 则结束当前字符串
                             sCommentOrString = CommentOrString.None;
                             sCurrentToken.appendLiteralChar(c);
                             collectTokenAndResetCache(tokens, sCurrentToken);
-//                            sCurrentToken.partOfEL = false;
                             continue;
                         } else {
                             // 当前字符不为 "
@@ -910,45 +821,40 @@ public class KotlinTokenParserBackup implements ITokenParser {
                             } else {
                                 sCurrentToken.extraInt = TokenCache.IN_STRING_MODE_ESCAPE_IDLE;
                             }
-                            if (sCurrentToken.elExpState == TokenCache.EL_MAY_START) {
+                            if (sCurrentToken.elExpStarterState == TokenCache.EL_STARTER_STATE_MAY_START) {
                                 if (isLeftBrace(c)) {
                                     // ${ el表达式开始了
-//                                    sCurrentToken.elExpState = TokenCache.EL_IN_EXPRESSION;
+                                    sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_NONE;
                                     // 收起之前的 token 作为 string
                                     // todo wang
-                                    sCurrentToken.literalStr.substring(0, sCurrentToken.literalStr.length() - 1);
-//                                    sCurrentToken.partOfEL = true;
+                                    String strBeforeDollar = sCurrentToken.literalStr.substring(0, sCurrentToken.literalStr.length() - 1);
+                                    sCurrentToken.literalStr.setLength(0);
+                                    sCurrentToken.literalStr.append(strBeforeDollar);
                                     // 此时没有右侧 "
                                     collectTokenAndResetCache(tokens, sCurrentToken);
                                     sCurrentToken.type = TokenType.ELExprStart;
                                     sCurrentToken.elLayer++;
-                                    sCurrentToken.elCapsuleStringType = TokenCache.EL_CAPSULE_IN_STRING;
                                     sCurrentToken.appendLiteralString("${");
                                     collectTokenAndResetCache(tokens, sCurrentToken);
-                                    sCurrentToken.pushBrace(true, Brace.DIRECTION_LEFT);
-//                                    sCurrentToken.elExpState = TokenCache.EL_IN_EXPRESSION;
-//                                    sCurrentToken.elExpInStringType = TokenCache.EL_EXP_IN_STRING;
+                                    sCurrentToken.pushELStarterBrace(Brace.EL_CAPSULE_STRING_TYPE_STRING);
+                                    sCommentOrString = CommentOrString.None;
                                 } else {
-                                    sCurrentToken.elExpState = TokenCache.EL_NONE;
+                                    sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_NONE;
                                     sCurrentToken.appendLiteralChar(c);
                                 }
                                 continue;
                             } else {
                                 if (isDollar(c)) {
-                                    sCurrentToken.elExpState = TokenCache.EL_MAY_START;
+                                    sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_MAY_START;
                                     // 当做字符串继续
                                     sCurrentToken.appendLiteralChar(c);
                                     continue;
                                 } else {
-                                    sCurrentToken.elExpState = TokenCache.EL_NONE;
+                                    sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_NONE;
                                     sCurrentToken.appendLiteralChar(c);
                                     continue;
                                 }
                             }
-                            // todo 待删除
-                            // 字符串继续
-//                            sCurrentToken.appendLiteralChar(c);
-//                            continue;
                         }
                     } else {
                         // 前一个字符是 escape 转义字符：
@@ -969,8 +875,42 @@ public class KotlinTokenParserBackup implements ITokenParser {
                     } else {
                         // 当前字符不为 "
                         // 字符串继续
-                        sCurrentToken.appendLiteralChar(c);
-                        continue;
+//                        sCurrentToken.appendLiteralChar(c);
+//                        continue;
+                        if (sCurrentToken.elExpStarterState == TokenCache.EL_STARTER_STATE_MAY_START) {
+                            if (isLeftBrace(c)) {
+                                // ${ el表达式开始了
+                                sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_NONE;
+                                // 收起之前的 token 作为 string
+                                // todo wang
+                                String strBeforeDollar = sCurrentToken.literalStr.substring(0, sCurrentToken.literalStr.length() - 1);
+                                sCurrentToken.literalStr.setLength(0);
+                                sCurrentToken.literalStr.append(strBeforeDollar);
+                                // 此时没有右侧 "
+                                collectTokenAndResetCache(tokens, sCurrentToken);
+                                sCurrentToken.type = TokenType.ELExprStart;
+                                sCurrentToken.elLayer++;
+                                sCurrentToken.appendLiteralString("${");
+                                collectTokenAndResetCache(tokens, sCurrentToken);
+                                sCurrentToken.pushELStarterBrace(Brace.EL_CAPSULE_STRING_TYPE_STRING_BLOCK);
+                                sCommentOrString = CommentOrString.None;
+                            } else {
+                                sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_NONE;
+                                sCurrentToken.appendLiteralChar(c);
+                            }
+                            continue;
+                        } else {
+                            if (isDollar(c)) {
+                                sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_MAY_START;
+                                // 当做字符串继续
+                                sCurrentToken.appendLiteralChar(c);
+                                continue;
+                            } else {
+                                sCurrentToken.elExpStarterState = TokenCache.EL_STARTER_STATE_NONE;
+                                sCurrentToken.appendLiteralChar(c);
+                                continue;
+                            }
+                        }
                     }
                 } else if (sCommentOrString == CommentOrString.MayStringEnd0) {
                     if (isStringSymbol(c)) {
@@ -989,7 +929,6 @@ public class KotlinTokenParserBackup implements ITokenParser {
                         sCurrentToken.type = TokenType.StringBlock;
                         sCurrentToken.appendLiteralChar(c);
                         collectTokenAndResetCache(tokens, sCurrentToken);
-//                        sCurrentToken.partOfEL = false;
                         continue;
                     } else {
                         // 回退到 InBlockString
@@ -999,9 +938,100 @@ public class KotlinTokenParserBackup implements ITokenParser {
                     }
                 }
             }
+            // 换行时，identifier 和 number 类型应该收吗
+            if (sCurrentToken.type == TokenType.Identifier || sCurrentToken.type == TokenType.Number) {
+                collectTokenAndResetCache(tokens, sCurrentToken);
+            }
+        }
+
+        if (sCurrentToken.type != TokenType.None) {
+            collectTokenAndResetCache(tokens, sCurrentToken);
+        }
+
+        if (codeSectionType != CodeSectionType.ContentSection && tokens.size() == 0) {
+            if (packageStr.length() > 0) {
+                tokens.add(SealedToken.genPackageToken(packageStr.substring(7))); // "package".length() == 7
+                tokens.add(SealedToken.genNewLineToken());
+                packageStr.setLength(0);
+            }
+            if (importStrCache.length() > 0) {
+                importStrArr.add(importStrCache.toString());
+                importStrCache.setLength(0);
+            }
+            for (String importStr : importStrArr) {
+                tokens.add(SealedToken.genImportToken(importStr.substring(6))); // "import".length() == 6
+                tokens.add(SealedToken.genNewLineToken());
+            }
         }
 
         return tokens;
+    }
+
+    private void collectParentheses(char c, ArrayList<SealedToken> tokens, int lineIndex, int columnIndex) {
+        if (sCurrentToken.elLayer == 0) {
+            // 如果当前不在 el 表达式中
+            sCurrentToken.type = TokenType.Parentheses;
+            sCurrentToken.appendLiteralChar(c);
+            collectTokenAndResetCache(tokens, sCurrentToken);
+            return;
+        } else if (sCurrentToken.elLayer > 0) {
+            // 如果是在 el 表达式中
+            if (isLeftBrace(c)) {
+                // leftBrace 必然不会抵消，el 表达式还会继续
+                sCurrentToken.pushBrace(false, Brace.DIRECTION_LEFT);
+                sCurrentToken.type = TokenType.Parentheses;
+                sCurrentToken.appendLiteralChar(c);
+                collectTokenAndResetCache(tokens, sCurrentToken);
+                return;
+            } else if (isRightBrace(c)) {
+                sCurrentToken.pushBrace(false, Brace.DIRECTION_RIGHT);
+                // text
+                Brace.CheckPairResult operateResult = sCurrentToken.operateLastTwoBracesResult();
+                if (operateResult.result == Brace.PAIR_RESULT_YES) {
+                    // 收集 token，sCurrentToken.elBraceArr 已经在 operateLastTwoBracesResult() 内部做改变了
+                    sCurrentToken.type = TokenType.Parentheses;
+                    sCurrentToken.appendLiteralChar(c);
+                    collectTokenAndResetCache(tokens, sCurrentToken);
+                    return;
+                } else if (operateResult.result == Brace.PAIR_RESULT_NO) {
+                    // 收集 token
+                    sCurrentToken.type = TokenType.Parentheses;
+                    sCurrentToken.appendLiteralChar(c);
+                    collectTokenAndResetCache(tokens, sCurrentToken);
+                    return;
+                } else if (operateResult.result == Brace.PAIR_RESULT_EL_END) {
+                    // elCapsuleStringType 这里应该在 el 表达式开始时，在brace中记录一个
+                    // 当前elLayer 的 el表达式结束了
+                    // 进入 字符串模式
+                    sCurrentToken.type = TokenType.ELExprEnd;
+                    sCurrentToken.appendLiteralChar(c);
+                    collectTokenAndResetCache(tokens, sCurrentToken);
+
+                    sCurrentToken.elLayer--;
+
+                    if (operateResult.stringType == Brace.EL_CAPSULE_STRING_TYPE_STRING) {
+                        sCurrentToken.type = TokenType.String;
+                        sCommentOrString = CommentOrString.InString;
+                    } else {
+                        sCurrentToken.type = TokenType.StringBlock;
+                        sCommentOrString = CommentOrString.InBlockString;
+                    }
+                    return;
+                }
+            } else {
+                sCurrentToken.type = TokenType.Parentheses;
+                sCurrentToken.appendLiteralChar(c);
+                collectTokenAndResetCache(tokens, sCurrentToken);
+                return;
+            }
+        } else {
+            Log.e("elLayer < 0",
+                    "line : " + (lineIndex + 1) + ", columnIndex : " + columnIndex
+                            + ", current char : ->" + c + "<-, this char's int value is : " + ((int) c)
+                            + ", currentToken literal str is : ->" + sCurrentToken.literalStr + "<-", this.absFileName);
+
+            throw new IllegalArgumentException("elLayer < 0, " + sCurrentToken.elLayer);
+        }
     }
 
     private static void collectTokenAndResetCache(ArrayList<SealedToken> tokens, TokenCache tokenCache) {
