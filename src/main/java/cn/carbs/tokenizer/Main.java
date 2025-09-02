@@ -31,7 +31,9 @@ public class Main {
 //                "/Users/v_wangjianjun02/Desktop/shaking/version2/JavaTokenizer/file/ZExampleKotlin11Pass.kt",
 //                "/Users/v_wangjianjun02/Desktop/shaking/version2/JavaTokenizer/file/ZExampleKotlin12.kt",
 //                "/Users/v_wangjianjun02/Desktop/shaking/version2/JavaTokenizer/file/ZExampleKotlin13.kt",
-                "/Users/wangchao/Desktop/learning/JavaTokenizer/file/ZExampleKotlin12.kt",
+//                "/Users/wangchao/Desktop/learning/JavaTokenizer/file/ZExampleKotlin16.kt",
+                "/Users/wangchao/Desktop/learning/JavaTokenizer/file/ZExampleKotlin15Comment.kt",
+//                "/Users/wangchao/Downloads/kotlin-master/analysis/low-level-api-fir/testData/contextCollector/file.kt",
                 true);
     }
 

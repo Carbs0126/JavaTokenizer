@@ -109,11 +109,19 @@ public class TokenCache {
         return this.literalStr.charAt(this.literalStr.length() - 1);
     }
 
-    public boolean pop() {
-        if (this.literalStr.length() > 0) {
-            String literStr = this.literalStr.toString();
-            this.literalStr.setLength(0);
-            this.literalStr.append(literStr.substring(0, literStr.length() - 1));
+    public boolean popLiteralStr() {
+//        if (this.literalStr.length() > 0) {
+//            this.literalStr.setLength(this.literalStr.length() - 1);
+//            return true;
+//        } else {
+//            return false;
+//        }
+        return popLiteralStr(1);
+    }
+
+    public boolean popLiteralStr(int popLastCharCount) {
+        if (this.literalStr.length() > popLastCharCount - 1) {
+            this.literalStr.setLength(this.literalStr.length() - popLastCharCount);
             return true;
         } else {
             return false;
