@@ -22,3 +22,27 @@ val quote = "\"\"\""
     \"\"\"tsdafd\${"$"}afaf
     """
     println(x)
+
+
+
+
+
+
+
+
+kotlin中的el表达式的处理：
+
+string token中应该有一个 目前在哪一层：
+如下：
+// 在el表达式中的所有token 层级都 +1，比如 aaa此时的层级是0， el表达式中的 name 的层级是1
+"aaa ${name} === ${if (name !in parameterDescriptorsWithDefaultValue) value else ".xx ${name} yyyyyy"} adfaewfa"
+// 当 el表达式结束后，怎样获取当前 string 是那种string呢？
+// ↑ 每一个 token type 中都加上一个当前处于string时，string的类别？string还是stringBlock
+
+第一层有：aaa  ===  adfaewfa
+第二层有：.xx  yyyyy
+
+当 string中遇到 el表达式时，在el表达式 token （type是 elStart 和 elEnd）中记录一个 当前层级，同时各个其他type也加上一个层级，
+这个层级是所处的 string 层级透传过来的，即，和 string 的层级的值相等
+
+当el表达式中再次遇到string时，stringToken 的层级 +1，

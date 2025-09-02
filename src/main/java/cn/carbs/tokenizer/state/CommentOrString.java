@@ -13,8 +13,8 @@ public enum CommentOrString {
     MayStringStarter0,      //  即 """ 中的第一个
     MayStringStarter1,      //  即 """ 中的第二个
     MayStringEnd0,          //  即 """ 中的第一个
-    MayStringEnd1,          //  即 """ 中的第二个。kotlin中结尾 """ 的规则：如果结尾连续多个 """，则选择最后三个" 作为结尾
-    MayStringBlockEnd;      //  kotlin中结尾 """ 的规则：如果结尾连续多个 """，则选择最后三个" 作为结尾，当连续三个 " 时，切到此状态
+    MayStringEnd1,          //  即 """ 中的第二个
+    MayBlockStringEnd;
 
     // 由于 kotlin 的注释支持嵌套，因此当处理 kotlin 中的 InBlockComment 时，用于处理嵌套注释
     private int blockCommentLayer = 0;

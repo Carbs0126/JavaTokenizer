@@ -1,5 +1,7 @@
 package cn.carbs.tokenizer;
 
+import cn.carbs.tokenizer.state.CommentOrString;
+
 public class Main {
 
     public static void main(String[] argv) {
@@ -31,9 +33,9 @@ public class Main {
 //                "/Users/v_wangjianjun02/Desktop/shaking/version2/JavaTokenizer/file/ZExampleKotlin11Pass.kt",
 //                "/Users/v_wangjianjun02/Desktop/shaking/version2/JavaTokenizer/file/ZExampleKotlin12.kt",
 //                "/Users/v_wangjianjun02/Desktop/shaking/version2/JavaTokenizer/file/ZExampleKotlin13.kt",
-//                "/Users/wangchao/Desktop/learning/JavaTokenizer/file/ZExampleKotlin16.kt",
-                "/Users/wangchao/Desktop/learning/JavaTokenizer/file/ZExampleKotlin15Comment.kt",
-//                "/Users/wangchao/Downloads/kotlin-master/analysis/low-level-api-fir/testData/contextCollector/file.kt",
+//                "/Users/wangchao/Desktop/learning/JavaTokenizer/file/ZExampleKotlin12.kt",
+//                "/Users/v_wangjianjun02/Desktop/shaking/version2/JavaTokenizer/file/ZExampleKotlin15Comment.kt",
+                "/Users/wangchao/Desktop/learning/JavaTokenizer/file/ZExampleKotlin16BlockString.kt",
                 true);
     }
 
